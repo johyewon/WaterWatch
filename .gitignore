@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+/build
+/captures
+
+# Kotlin
+.kotlin/
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+
+# 로컬 SDK 경로가 들어 있어 기기마다 다르다
+local.properties
+
+# NDK
+.externalNativeBuild
+.cxx
+
+# macOS
+.DS_Store
