@@ -35,6 +35,10 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        // android.util.Log 는 JVM 유닛테스트에서 스텁이라 호출 시 예외가 난다.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
