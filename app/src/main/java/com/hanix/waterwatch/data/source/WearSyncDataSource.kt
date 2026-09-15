@@ -6,6 +6,8 @@ import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.hanix.waterwatch.common.KEY_EPOCH_DAY
 import com.hanix.waterwatch.common.KEY_TOTAL_ML
+import com.hanix.waterwatch.common.LOG_RESULT_OK
+import com.hanix.waterwatch.common.PATH_LOG_RESULT
 import com.hanix.waterwatch.common.PATH_TODAY_TOTAL
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
@@ -17,12 +19,16 @@ interface WearSyncDataSource {
     suspend fun publishTodayTotal(ml: Double?)
 
     suspend fun isWatchConnected(): Boolean
+
+    /** 워치가 요청한 기록의 처리 결과 회신 */
+    suspend fun sendRecordResult(nodeId: String, success: Boolean)
 }
 
 internal class WearSyncDataSourceImpl(context: Context) : WearSyncDataSource {
 
     private val dataClient = Wearable.getDataClient(context)
     private val nodeClient = Wearable.getNodeClient(context)
+    private val messageClient = Wearable.getMessageClient(context)
 
     /*
      * 총량·날짜가 모두 이전과 같으면 DataItem 이 안 바뀌어 워치에 이벤트가 가지 않는다.
@@ -53,7 +59,16 @@ internal class WearSyncDataSourceImpl(context: Context) : WearSyncDataSource {
             .onFailure { Log.w(TAG, "연결 노드 조회 실패", it) }
             .getOrDefault(false)
 
+    /** 이 회신이 없으면 폰에서 기록이 실패해도 워치는 성공한 것처럼 보인다. */
+    override suspend fun sendRecordResult(nodeId: String, success: Boolean) {
+        val payload = if (success) LOG_RESULT_OK else RESULT_FAILED
+        runCatching {
+            messageClient.sendMessage(nodeId, PATH_LOG_RESULT, payload.toByteArray()).await()
+        }.onFailure { Log.w(TAG, "기록 결과 회신 실패 — success=$success", it) }
+    }
+
     companion object {
         private const val TAG = "WaterWatch/Wear"
+        private const val RESULT_FAILED = "failed"
     }
 }

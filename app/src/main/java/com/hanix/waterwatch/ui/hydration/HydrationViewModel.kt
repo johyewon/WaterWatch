@@ -4,9 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanix.waterwatch.data.repo.HydrationRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class HydrationViewModel(
@@ -27,6 +30,14 @@ class HydrationViewModel(
     /** 바깥 null 은 미조회, 성공 값의 null 은 기록 없음 */
     private val _total = MutableStateFlow<Result<Double?>?>(null)
     val total: StateFlow<Result<Double?>?> = _total.asStateFlow()
+
+    /*
+     * 권한 시트 띄우기는 상태가 아니라 일회성 액션이다. StateFlow 로 두면 화면이 띄운 뒤
+     * 수동으로 꺼줘야 하고, Activity 재생성마다 다시 뜬다.
+     * Channel 은 수집 전에 보낸 값도 버퍼링하고 재수집 시 다시 흘리지 않는다.
+     */
+    private val _requestPermissions = Channel<Unit>(Channel.BUFFERED)
+    val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()
 
     init {
         loadWatchConnection()
@@ -53,18 +64,23 @@ class HydrationViewModel(
             Log.i(TAG, "Health Connect 사용 가능=$isHealthConnectAvailable")
             if (isHealthConnectAvailable.not()) return@launch
 
-            val granted = checkGranted { hydrationRepository.hasPermissions() }
+            val granted = checkGranted("필수") { hydrationRepository.hasPermissions() }
             _granted.value = granted
             if (granted) loadToday()
+
+            // 필수 권한만 허용된 상태에서도 요청해야 백그라운드 읽기가 허용될 기회가 생긴다.
+            if (checkGranted("전체") { hydrationRepository.hasAllRequestedPermissions() }.not()) {
+                _requestPermissions.send(Unit)
+            }
         }
     }
 
     // ponytail: 확인 실패는 미허용으로 보고 요청까지 진행. 실패 사유별 분기는 필요해지면.
-    private suspend fun checkGranted(check: suspend () -> Boolean): Boolean =
+    private suspend fun checkGranted(label: String, check: suspend () -> Boolean): Boolean =
         runCatching { check() }
-            .onFailure { Log.e(TAG, "권한 확인 실패", it) }
+            .onFailure { Log.e(TAG, "$label 권한 확인 실패", it) }
             .getOrDefault(false)
-            .also { Log.i(TAG, "권한 확인 granted=$it") }
+            .also { Log.i(TAG, "$label 권한 확인 granted=$it") }
 
     private suspend fun loadToday() {
         _total.value = runCatching { hydrationRepository.todayTotalMl() }

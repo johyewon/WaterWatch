@@ -31,10 +31,12 @@ fun WearHydrationRoute(modifier: Modifier = Modifier) {
 
     val totalMl by viewModel.todayTotalMl.collectAsStateWithLifecycle()
     val sendResult by viewModel.sendResult.collectAsStateWithLifecycle()
+    val recordAccepted by viewModel.recordAccepted.collectAsStateWithLifecycle()
 
     WearHydrationScreen(
         totalMl = totalMl,
         sendFailed = sendResult?.isFailure == true,
+        recordFailed = recordAccepted == false,
         onRecordClick = { viewModel.recordIntake(SERVING_ML) },
         modifier = modifier
     )
@@ -44,6 +46,7 @@ fun WearHydrationRoute(modifier: Modifier = Modifier) {
 fun WearHydrationScreen(
     totalMl: Int?,
     sendFailed: Boolean = false,
+    recordFailed: Boolean = false,
     onRecordClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -60,8 +63,9 @@ fun WearHydrationScreen(
             Text(text = "+$SERVING_ML ml")
         }
 
-        if (sendFailed) {
-            Text(text = "전송 실패 — 폰 연결 확인")
+        when {
+            sendFailed -> Text(text = "전송 실패 — 폰 연결 확인")
+            recordFailed -> Text(text = "폰에서 기록 실패")
         }
     }
 }

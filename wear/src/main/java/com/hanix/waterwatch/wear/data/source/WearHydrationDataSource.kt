@@ -7,11 +7,14 @@ import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import com.hanix.waterwatch.common.KEY_EPOCH_DAY
 import com.hanix.waterwatch.common.KEY_TOTAL_ML
+import com.hanix.waterwatch.common.LOG_RESULT_OK
 import com.hanix.waterwatch.common.PATH_LOG_HYDRATION
+import com.hanix.waterwatch.common.PATH_LOG_RESULT
 import com.hanix.waterwatch.common.PATH_TODAY_TOTAL
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +27,9 @@ interface WearHydrationDataSource {
 
     /** 폰이 발행한 오늘 총량. 오늘 것이 아닌 값은 흘리지 않는다. */
     fun todayTotalMl(): Flow<Int>
+
+    /** 폰이 회신한 기록 성공 여부 */
+    fun recordResults(): Flow<Boolean>
 
     suspend fun requestRecord(ml: Int)
 }
@@ -52,6 +58,17 @@ internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationData
         }.onFailure { Log.w(TAG, "총량 구독 실패", it) }
 
         awaitClose { dataClient.removeListener(listener) }
+    }
+
+    override fun recordResults(): Flow<Boolean> = callbackFlow {
+        val listener = MessageClient.OnMessageReceivedListener { event ->
+            if (event.path == PATH_LOG_RESULT) trySend(String(event.data) == LOG_RESULT_OK)
+        }
+
+        runCatching { messageClient.addListener(listener).await() }
+            .onFailure { Log.w(TAG, "기록 결과 구독 실패", it) }
+
+        awaitClose { messageClient.removeListener(listener) }
     }
 
     /*

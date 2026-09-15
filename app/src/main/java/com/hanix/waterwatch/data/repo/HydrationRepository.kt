@@ -16,11 +16,23 @@ class HydrationRepository(
     /** 앱 동작에 필요한 최소 권한. 이게 false 면 조회도 기록도 못 한다. */
     suspend fun hasPermissions(): Boolean = healthConnectDataSource.hasHydrationPermissions()
 
+    /** 백그라운드 읽기까지 포함. 최소 권한만 있는 상태를 구분해 권한 요청을 다시 띄우는 데 쓴다. */
+    suspend fun hasAllRequestedPermissions(): Boolean =
+        healthConnectDataSource.hasAllRequestedPermissions()
+
     /** 조회한 값은 곧바로 워치에 반영한다. 폰만 최신이고 워치가 낡은 값을 드는 상태를 안 만들기 위해. */
     suspend fun todayTotalMl(): Double? =
         healthConnectDataSource.readTodayTotalMl().also { publishToWear(it) }
 
+    suspend fun recordIntake(ml: Double) {
+        healthConnectDataSource.writeHydrationMl(ml)
+    }
+
     suspend fun isWatchConnected(): Boolean = wearSyncDataSource.isWatchConnected()
+
+    suspend fun sendRecordResult(nodeId: String, success: Boolean) {
+        wearSyncDataSource.sendRecordResult(nodeId = nodeId, success = success)
+    }
 
     /** 워치 미페어링·Wearable API 없음은 폰 기능과 무관하므로 조회 실패로 올리지 않는다. */
     private suspend fun publishToWear(ml: Double?) {

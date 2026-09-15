@@ -40,9 +40,9 @@ fun HydrationRoute(
         viewModel.onPermissionResult(result.containsAll(HealthConnectDataSource.HYDRATION_PERMISSIONS))
     }
 
-    LaunchedEffect(granted) {
-        if (granted == false) {
-            permissionLauncher.launch(HealthConnectDataSource.HYDRATION_PERMISSIONS)
+    LaunchedEffect(Unit) {
+        viewModel.requestPermissions.collect {
+            permissionLauncher.launch(HealthConnectDataSource.REQUESTED_PERMISSIONS)
         }
     }
 

@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.health.READ_HYDRATION" />
     <uses-permission android:name="android.permission.health.WRITE_HYDRATION" />
+    <!-- 워치가 기록할 때 폰 앱이 포그라운드가 아니어서 백그라운드 집계가 필요하다 -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <!-- Android 11+ 패키지 가시성. 없으면 getSdkStatus() 가 Health Connect 를 못 본다 -->
     <queries>
@@ -55,6 +57,17 @@
 
 
 
+        <service
+            android:name=".service.HydrationRecordListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/hydration/log" />
+            </intent-filter>
+        </service>
 
     </application>
 
