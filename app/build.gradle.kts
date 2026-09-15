@@ -51,6 +51,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     implementation(libs.androidx.health.connect.client)
+    implementation(project(":common"))
+    implementation(libs.play.services.wearable)
+    implementation(libs.kotlinx.coroutines.play.services)
 
 
     testImplementation(libs.junit)

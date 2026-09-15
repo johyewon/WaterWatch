@@ -32,6 +32,7 @@ fun HydrationRoute(
 ) {
     val granted by viewModel.granted.collectAsStateWithLifecycle()
     val total by viewModel.total.collectAsStateWithLifecycle()
+    val watchConnected by viewModel.watchConnected.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -47,7 +48,9 @@ fun HydrationRoute(
 
     HydrationScreen(
         healthConnectAvailable = viewModel.isHealthConnectAvailable,
+        granted = granted,
         total = total,
+        watchConnected = watchConnected,
         modifier = modifier
     )
 }
@@ -55,7 +58,9 @@ fun HydrationRoute(
 @Composable
 fun HydrationScreen(
     healthConnectAvailable: Boolean,
+    granted: Boolean?,
     total: Result<Double?>?,
+    watchConnected: Boolean?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -74,6 +79,13 @@ fun HydrationScreen(
         total?.let {
             Text(text = it.toLabel(), style = MaterialTheme.typography.titleMedium)
         }
+
+        watchConnected?.let {
+            Text(
+                text = if (it) "워치 연결됨" else "연결된 워치 없음",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 
@@ -86,7 +98,25 @@ private fun Result<Double?>.toLabel(): String = fold(
 @Composable
 fun HydrationScreenPreview() {
     WaterWatchTheme {
-        HydrationScreen(healthConnectAvailable = true, total = Result.success(750.0))
+        HydrationScreen(
+            healthConnectAvailable = true,
+            granted = true,
+            total = Result.success(750.0),
+            watchConnected = true
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HydrationScreenEmptyPreview() {
+    WaterWatchTheme {
+        HydrationScreen(
+            healthConnectAvailable = true,
+            granted = true,
+            total = Result.success(null),
+            watchConnected = false
+        )
     }
 }
 
@@ -94,6 +124,11 @@ fun HydrationScreenPreview() {
 @Composable
 fun HydrationScreenUnavailablePreview() {
     WaterWatchTheme {
-        HydrationScreen(healthConnectAvailable = false, total = null)
+        HydrationScreen(
+            healthConnectAvailable = false,
+            granted = false,
+            total = null,
+            watchConnected = null
+        )
     }
 }

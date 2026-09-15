@@ -17,15 +17,19 @@ class HydrationViewModel(
     val isHealthConnectAvailable: Boolean
         get() = hydrationRepository.isHealthConnectAvailable
 
-    /** null 은 아직 확인 중 */
+    // 아래 Boolean? 상태의 null 은 모두 "아직 확인 중"을 뜻한다.
     private val _granted = MutableStateFlow<Boolean?>(null)
     val granted: StateFlow<Boolean?> = _granted.asStateFlow()
+
+    private val _watchConnected = MutableStateFlow<Boolean?>(null)
+    val watchConnected: StateFlow<Boolean?> = _watchConnected.asStateFlow()
 
     /** 바깥 null 은 미조회, 성공 값의 null 은 기록 없음 */
     private val _total = MutableStateFlow<Result<Double?>?>(null)
     val total: StateFlow<Result<Double?>?> = _total.asStateFlow()
 
     init {
+        loadWatchConnection()
         loadPermissionState()
     }
 
@@ -36,20 +40,31 @@ class HydrationViewModel(
         if (granted) viewModelScope.launch { loadToday() }
     }
 
+    private fun loadWatchConnection() {
+        viewModelScope.launch {
+            val connected = hydrationRepository.isWatchConnected()
+            Log.i(TAG, "워치 연결=$connected")
+            _watchConnected.value = connected
+        }
+    }
+
     private fun loadPermissionState() {
         viewModelScope.launch {
             Log.i(TAG, "Health Connect 사용 가능=$isHealthConnectAvailable")
             if (isHealthConnectAvailable.not()) return@launch
 
-            // ponytail: 확인 실패는 미허용으로 보고 요청까지 진행. 실패 사유별 분기는 필요해지면.
-            val granted = runCatching { hydrationRepository.hasPermissions() }
-                .onFailure { Log.e(TAG, "권한 확인 실패", it) }
-                .getOrDefault(false)
-            Log.i(TAG, "권한 확인 granted=$granted")
+            val granted = checkGranted { hydrationRepository.hasPermissions() }
             _granted.value = granted
             if (granted) loadToday()
         }
     }
+
+    // ponytail: 확인 실패는 미허용으로 보고 요청까지 진행. 실패 사유별 분기는 필요해지면.
+    private suspend fun checkGranted(check: suspend () -> Boolean): Boolean =
+        runCatching { check() }
+            .onFailure { Log.e(TAG, "권한 확인 실패", it) }
+            .getOrDefault(false)
+            .also { Log.i(TAG, "권한 확인 granted=$it") }
 
     private suspend fun loadToday() {
         _total.value = runCatching { hydrationRepository.todayTotalMl() }
