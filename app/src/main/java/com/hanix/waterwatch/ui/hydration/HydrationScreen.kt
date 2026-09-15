@@ -1,0 +1,99 @@
+package com.hanix.waterwatch.ui.hydration
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.PermissionController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hanix.waterwatch.data.source.HealthConnectDataSource
+import com.hanix.waterwatch.locator.ServiceLocator
+import com.hanix.waterwatch.ui.theme.WaterWatchTheme
+
+private val SCREEN_PADDING = 24.dp
+
+private val ITEM_SPACING = 12.dp
+
+@Composable
+fun HydrationRoute(
+    modifier: Modifier = Modifier,
+    viewModel: HydrationViewModel = viewModel {
+        HydrationViewModel(hydrationRepository = ServiceLocator.hydrationRepository)
+    }
+) {
+    val granted by viewModel.granted.collectAsStateWithLifecycle()
+    val total by viewModel.total.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { result ->
+        viewModel.onPermissionResult(result.containsAll(HealthConnectDataSource.HYDRATION_PERMISSIONS))
+    }
+
+    LaunchedEffect(granted) {
+        if (granted == false) {
+            permissionLauncher.launch(HealthConnectDataSource.HYDRATION_PERMISSIONS)
+        }
+    }
+
+    HydrationScreen(
+        healthConnectAvailable = viewModel.isHealthConnectAvailable,
+        total = total,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun HydrationScreen(
+    healthConnectAvailable: Boolean,
+    total: Result<Double?>?,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(SCREEN_PADDING),
+        verticalArrangement = Arrangement.spacedBy(ITEM_SPACING)
+    ) {
+        Text(text = "Health Connect", style = MaterialTheme.typography.titleLarge)
+
+        if (healthConnectAvailable.not()) {
+            Text(
+                text = "이 기기에서 Health Connect 를 사용할 수 없음",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+
+        total?.let {
+            Text(text = it.toLabel(), style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+private fun Result<Double?>.toLabel(): String = fold(
+    onSuccess = { ml -> if (ml == null) "기록 없음" else "오늘 총 섭취량 ${ml.toInt()} ml" },
+    onFailure = { "조회 실패 — ${it.javaClass.simpleName}" }
+)
+
+@Preview(showBackground = true)
+@Composable
+fun HydrationScreenPreview() {
+    WaterWatchTheme {
+        HydrationScreen(healthConnectAvailable = true, total = Result.success(750.0))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HydrationScreenUnavailablePreview() {
+    WaterWatchTheme {
+        HydrationScreen(healthConnectAvailable = false, total = null)
+    }
+}
