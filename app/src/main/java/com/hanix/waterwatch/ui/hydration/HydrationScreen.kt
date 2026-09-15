@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +19,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.locator.ServiceLocator
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
+
+/** 한 잔 기록 단위(ml) */
+private const val SERVING_ML = 250.0
 
 private val SCREEN_PADDING = 24.dp
 
@@ -51,6 +55,7 @@ fun HydrationRoute(
         granted = granted,
         total = total,
         watchConnected = watchConnected,
+        onRecordClick = { viewModel.recordIntake(SERVING_ML) },
         modifier = modifier
     )
 }
@@ -61,6 +66,7 @@ fun HydrationScreen(
     granted: Boolean?,
     total: Result<Double?>?,
     watchConnected: Boolean?,
+    onRecordClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -78,6 +84,12 @@ fun HydrationScreen(
 
         total?.let {
             Text(text = it.toLabel(), style = MaterialTheme.typography.titleMedium)
+        }
+
+        if (granted == true) {
+            Button(onClick = onRecordClick) {
+                Text(text = "+${SERVING_ML.toInt()} ml")
+            }
         }
 
         watchConnected?.let {

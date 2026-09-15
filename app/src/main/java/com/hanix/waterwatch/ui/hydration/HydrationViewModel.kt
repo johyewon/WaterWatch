@@ -51,6 +51,18 @@ class HydrationViewModel(
         if (granted) viewModelScope.launch { loadToday() }
     }
 
+    /** 기록 후 총량을 다시 읽는다. 조회 경로에 워치 발행이 물려 있어 워치까지 같이 갱신된다. */
+    fun recordIntake(ml: Double) {
+        viewModelScope.launch {
+            runCatching { hydrationRepository.recordIntake(ml) }
+                .onSuccess {
+                    Log.i(TAG, "기록 성공 ml=$ml")
+                    loadToday()
+                }
+                .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
+        }
+    }
+
     private fun loadWatchConnection() {
         viewModelScope.launch {
             val connected = hydrationRepository.isWatchConnected()
