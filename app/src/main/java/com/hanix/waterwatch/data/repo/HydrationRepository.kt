@@ -1,14 +1,20 @@
 package com.hanix.waterwatch.data.repo
 
 import android.util.Log
+import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
+import kotlinx.coroutines.flow.Flow
 
-/** Health Connect 를 단일 저장소로 쓰고, 조회 결과를 워치에 함께 반영한다. */
+/** 섭취 기록은 Health Connect 를 단일 저장소로 쓰고, 조회 결과를 워치에 함께 반영한다. */
 class HydrationRepository(
     private val healthConnectDataSource: HealthConnectDataSource,
-    private val wearSyncDataSource: WearSyncDataSource
+    private val wearSyncDataSource: WearSyncDataSource,
+    private val goalDataSource: GoalDataSource
 ) {
+
+    val goalMl: Flow<Int>
+        get() = goalDataSource.goalMl
 
     val isHealthConnectAvailable: Boolean
         get() = healthConnectDataSource.isAvailable

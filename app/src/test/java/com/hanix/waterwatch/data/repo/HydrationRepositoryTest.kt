@@ -1,7 +1,10 @@
 package com.hanix.waterwatch.data.repo
 
+import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -15,7 +18,8 @@ class HydrationRepositoryTest {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource
         )
 
         assertEquals(250.0, repository.todayTotalMl())
@@ -26,7 +30,8 @@ class HydrationRepositoryTest {
     fun `워치 발행이 실패해도 조회 결과는 그대로 반환한다`() = runBlocking {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
-            wearSyncDataSource = FakeWearSyncDataSource(failOnPublish = true)
+            wearSyncDataSource = FakeWearSyncDataSource(failOnPublish = true),
+            goalDataSource = FakeGoalDataSource
         )
 
         assertEquals(250.0, repository.todayTotalMl())
@@ -37,7 +42,8 @@ class HydrationRepositoryTest {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource
         )
 
         assertNull(repository.todayTotalMl())
@@ -50,7 +56,8 @@ class HydrationRepositoryTest {
         val healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null)
         val repository = HydrationRepository(
             healthConnectDataSource = healthConnectDataSource,
-            wearSyncDataSource = FakeWearSyncDataSource()
+            wearSyncDataSource = FakeWearSyncDataSource(),
+            goalDataSource = FakeGoalDataSource
         )
 
         repository.recordIntake(250.0)
@@ -63,7 +70,8 @@ class HydrationRepositoryTest {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource
         )
 
         repository.sendRecordResult(nodeId = "node-1", success = false)
@@ -109,5 +117,9 @@ class HydrationRepositoryTest {
         override suspend fun sendRecordResult(nodeId: String, success: Boolean) {
             sentResult = nodeId to success
         }
+    }
+
+    private object FakeGoalDataSource : GoalDataSource {
+        override val goalMl: Flow<Int> = emptyFlow()
     }
 }

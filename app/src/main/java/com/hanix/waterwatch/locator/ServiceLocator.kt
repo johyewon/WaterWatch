@@ -3,6 +3,8 @@ package com.hanix.waterwatch.locator
 import android.annotation.SuppressLint
 import android.content.Context
 import com.hanix.waterwatch.data.repo.HydrationRepository
+import com.hanix.waterwatch.data.source.GoalDataSource
+import com.hanix.waterwatch.data.source.GoalDataSourceImpl
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSourceImpl
 import com.hanix.waterwatch.data.source.WearSyncDataSource
@@ -40,10 +42,15 @@ internal object ServiceLocator {
         WearSyncDataSourceImpl(context)
     }
 
+    private val goalDataSource: GoalDataSource by lazy {
+        GoalDataSourceImpl(context)
+    }
+
     val hydrationRepository: HydrationRepository by lazy {
         HydrationRepository(
             healthConnectDataSource = healthConnectDataSource,
             wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = goalDataSource,
         )
     }
     // End Singleton Provider

@@ -3,13 +3,18 @@ package com.hanix.waterwatch.ui.hydration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,9 +24,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.locator.ServiceLocator
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/** 한 잔 기록 단위(ml) */
-private const val SERVING_ML = 250.0
+/** 한 번 눌러서 바로 기록하는 용량(ml) */
+private val QUICK_SERVINGS_ML = listOf(120.0, 250.0)
+
+private val DATE_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
 
 private val SCREEN_PADDING = 24.dp
 
@@ -31,12 +41,13 @@ private val ITEM_SPACING = 12.dp
 fun HydrationRoute(
     modifier: Modifier = Modifier,
     viewModel: HydrationViewModel = viewModel {
+
         HydrationViewModel(hydrationRepository = ServiceLocator.hydrationRepository)
     }
 ) {
     val granted by viewModel.granted.collectAsStateWithLifecycle()
     val total by viewModel.total.collectAsStateWithLifecycle()
-    val watchConnected by viewModel.watchConnected.collectAsStateWithLifecycle()
+    val goalMl by viewModel.goalMl.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -53,9 +64,11 @@ fun HydrationRoute(
     HydrationScreen(
         healthConnectAvailable = viewModel.isHealthConnectAvailable,
         granted = granted,
+        // ponytail: 화면 진입 시점 날짜. 자정 넘겨 켜둔 채면 안 바뀜, 필요해지면 날짜 변경 브로드캐스트 구독.
+        today = LocalDate.now(),
         total = total,
-        watchConnected = watchConnected,
-        onRecordClick = { viewModel.recordIntake(SERVING_ML) },
+        goalMl = goalMl,
+        onRecordClick = viewModel::recordIntake,
         modifier = modifier
     )
 }
@@ -64,47 +77,73 @@ fun HydrationRoute(
 fun HydrationScreen(
     healthConnectAvailable: Boolean,
     granted: Boolean?,
+    today: LocalDate,
     total: Result<Double?>?,
-    watchConnected: Boolean?,
-    onRecordClick: () -> Unit = {},
+    goalMl: Int?,
+    onRecordClick: (ml: Double) -> Unit = {},
+    onCustomInputClick: () -> Unit = {},
+    onUndoClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val totalMl = total?.getOrNull()?.toInt() ?: 0
+
     Column(
-        modifier = modifier.padding(SCREEN_PADDING),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(SCREEN_PADDING),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ITEM_SPACING)
     ) {
-        Text(text = "Health Connect", style = MaterialTheme.typography.titleLarge)
+        TextButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.End)) {
+            Text(text = "설정")
+        }
+
+        Text(text = today.format(DATE_FORMATTER), style = MaterialTheme.typography.titleMedium)
+        Text(text = "%,d ml".format(totalMl), style = MaterialTheme.typography.displayLarge)
+
+        val failure = total?.exceptionOrNull()
+        when {
+            failure != null -> Text(text = "조회 실패 — ${failure.javaClass.simpleName}")
+            goalMl != null -> Text(text = remainingLabel(totalMl, goalMl))
+        }
 
         if (healthConnectAvailable.not()) {
-            Text(
-                text = "이 기기에서 Health Connect 를 사용할 수 없음",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text(text = "이 기기에서 Health Connect 를 사용할 수 없음")
         }
 
-        total?.let {
-            Text(text = it.toLabel(), style = MaterialTheme.typography.titleMedium)
-        }
+        Spacer(modifier = Modifier.weight(1f))
 
-        if (granted == true) {
-            Button(onClick = onRecordClick) {
-                Text(text = "+${SERVING_ML.toInt()} ml")
+        val recordEnabled = granted == true
+        Row(horizontalArrangement = Arrangement.spacedBy(ITEM_SPACING)) {
+            QUICK_SERVINGS_ML.forEach { ml ->
+                Button(
+                    onClick = { onRecordClick(ml) },
+                    enabled = recordEnabled,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(text = "+${ml.toInt()}ml")
+                }
+            }
+            Button(
+                onClick = onCustomInputClick,
+                enabled = recordEnabled,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "직접입력")
             }
         }
 
-        watchConnected?.let {
-            Text(
-                text = if (it) "워치 연결됨" else "연결된 워치 없음",
-                style = MaterialTheme.typography.bodyMedium
-            )
+        TextButton(onClick = onUndoClick, enabled = recordEnabled) {
+            Text(text = "이전 기록 취소하기")
         }
     }
 }
 
-private fun Result<Double?>.toLabel(): String = fold(
-    onSuccess = { ml -> if (ml == null) "기록 없음" else "오늘 총 섭취량 ${ml.toInt()} ml" },
-    onFailure = { "조회 실패 — ${it.javaClass.simpleName}" }
-)
+private fun remainingLabel(totalMl: Int, goalMl: Int): String =
+    if (totalMl >= goalMl) "오늘 목표를 채웠어요" else "%,dml 남았어요".format(goalMl - totalMl)
+
+private val PREVIEW_DATE = LocalDate.of(2026, 9, 29)
 
 @Preview(showBackground = true)
 @Composable
@@ -113,8 +152,9 @@ fun HydrationScreenPreview() {
         HydrationScreen(
             healthConnectAvailable = true,
             granted = true,
-            total = Result.success(750.0),
-            watchConnected = true
+            today = PREVIEW_DATE,
+            total = Result.success(1_750.0),
+            goalMl = 2_000
         )
     }
 }
@@ -126,8 +166,9 @@ fun HydrationScreenEmptyPreview() {
         HydrationScreen(
             healthConnectAvailable = true,
             granted = true,
+            today = PREVIEW_DATE,
             total = Result.success(null),
-            watchConnected = false
+            goalMl = 2_000
         )
     }
 }
@@ -139,8 +180,9 @@ fun HydrationScreenUnavailablePreview() {
         HydrationScreen(
             healthConnectAvailable = false,
             granted = false,
+            today = PREVIEW_DATE,
             total = null,
-            watchConnected = null
+            goalMl = 2_000
         )
     }
 }

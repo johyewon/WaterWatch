@@ -58,6 +58,7 @@ dependencies {
     implementation(project(":common"))
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.datastore.preferences)
 
 
     testImplementation(libs.junit)

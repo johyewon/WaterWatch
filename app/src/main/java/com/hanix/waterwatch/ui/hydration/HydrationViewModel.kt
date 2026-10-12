@@ -7,9 +7,11 @@ import com.hanix.waterwatch.data.repo.HydrationRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HydrationViewModel(
@@ -20,16 +22,17 @@ class HydrationViewModel(
     val isHealthConnectAvailable: Boolean
         get() = hydrationRepository.isHealthConnectAvailable
 
-    // 아래 Boolean? 상태의 null 은 모두 "아직 확인 중"을 뜻한다.
+    /** null 은 아직 확인 중 */
     private val _granted = MutableStateFlow<Boolean?>(null)
     val granted: StateFlow<Boolean?> = _granted.asStateFlow()
-
-    private val _watchConnected = MutableStateFlow<Boolean?>(null)
-    val watchConnected: StateFlow<Boolean?> = _watchConnected.asStateFlow()
 
     /** 바깥 null 은 미조회, 성공 값의 null 은 기록 없음 */
     private val _total = MutableStateFlow<Result<Double?>?>(null)
     val total: StateFlow<Result<Double?>?> = _total.asStateFlow()
+
+    /** null 은 DataStore 첫 값을 아직 못 읽은 상태 */
+    val goalMl: StateFlow<Int?> = hydrationRepository.goalMl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /*
      * 권한 시트 띄우기는 상태가 아니라 일회성 액션이다. StateFlow 로 두면 화면이 띄운 뒤
@@ -40,7 +43,6 @@ class HydrationViewModel(
     val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()
 
     init {
-        loadWatchConnection()
         loadPermissionState()
     }
 
@@ -60,14 +62,6 @@ class HydrationViewModel(
                     loadToday()
                 }
                 .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
-        }
-    }
-
-    private fun loadWatchConnection() {
-        viewModelScope.launch {
-            val connected = hydrationRepository.isWatchConnected()
-            Log.i(TAG, "워치 연결=$connected")
-            _watchConnected.value = connected
         }
     }
 
