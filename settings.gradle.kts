@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "WaterWatch"
+include(":common")
 include(":app")
 include(":wear")
  
