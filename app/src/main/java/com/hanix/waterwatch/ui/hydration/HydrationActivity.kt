@@ -1,7 +1,9 @@
 package com.hanix.waterwatch.ui.hydration
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +17,11 @@ class HydrationActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // 테마를 라이트로 고정해서 시스템 바 아이콘도 다크 모드와 상관없이 어두운 색으로 맞춘다.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
         setContent {
             WaterWatchTheme {
                 ScreenContents()
