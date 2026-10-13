@@ -50,8 +50,8 @@ private const val MAX_FLING_SPEED = 1800f
 // 연타하면 앞 소리가 끝나기 전에 겹쳐 난다.
 private const val QUACK_MAX_STREAMS = 3
 
-// 진행률이 이 이상이면 물에 뜬 것처럼 까딱인다. 프로토타입은 0.5, 정확한 값을 확인하기 전까지 0.6 으로 둔다.
-private const val FLOATING_PROGRESS = 0.6f
+// 진행률이 이 이상이면 물에 뜬 것처럼 까딱인다.
+private const val FLOATING_PROGRESS = 0.55f
 // 까딱임 한 방향(내려와 있다가 올라가기까지) 시간. 왕복 3.2초
 private const val BOB_HALF_MILLIS = 1_600
 private val BOB_RISE = 5.dp
