@@ -91,8 +91,10 @@ fun HydrationScreen(
     // Health Connect 집계는 1089.9999… 처럼 오차가 섞여 와서 버리지 않고 반올림한다.
     val totalMl = total?.getOrNull()?.roundToInt() ?: 0
 
+    val progress = goalMl?.let { (totalMl.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
+
     Box(modifier = modifier.fillMaxSize()) {
-        DuckBlock(modifier = Modifier.fillMaxSize())
+        DuckBlock(progress = progress, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디자인 프로토타입의 선글라스 SVG. 오리 이미지(425x480)에 그대로 겹치도록 같은 좌표계를 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="425dp"
+    android:height="480dp"
+    android:viewportWidth="425"
+    android:viewportHeight="480">
+
+    <!-- 다리 -->
+    <path
+        android:pathData="M96,112 L72,105"
+        android:strokeWidth="9"
+        android:strokeColor="#111726"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M329,112 L353,105"
+        android:strokeWidth="9"
+        android:strokeColor="#111726"
+        android:strokeLineCap="round" />
+
+    <!-- 브릿지 -->
+    <path
+        android:pathData="M193,110 Q212,98 232,110"
+        android:strokeWidth="9"
+        android:strokeColor="#111726"
+        android:strokeLineCap="round" />
+
+    <!-- 렌즈. SVG 는 렌즈 영역 기준 (0,0)→(0.35,1) 그라데이션이라 렌즈 좌표로 바꿔 넣었다. -->
+    <path
+        android:pathData="M92,100 Q92,92 101,92 L190,92 Q200,92 199,102 L194,128 Q186,158 146,158 Q104,158 96,130 Z"
+        android:strokeWidth="6"
+        android:strokeColor="#111726"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="92"
+                android:startY="92"
+                android:endX="129.8"
+                android:endY="158">
+                <item android:offset="0" android:color="#3A4A66" />
+                <item android:offset="0.55" android:color="#141B2B" />
+                <item android:offset="1" android:color="#0A0F1A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M333,100 Q333,92 324,92 L235,92 Q225,92 226,102 L231,128 Q239,158 279,158 Q321,158 329,130 Z"
+        android:strokeWidth="6"
+        android:strokeColor="#111726"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="225"
+                android:startY="92"
+                android:endX="262.8"
+                android:endY="158">
+                <item android:offset="0" android:color="#3A4A66" />
+                <item android:offset="0.55" android:color="#141B2B" />
+                <item android:offset="1" android:color="#0A0F1A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 렌즈 반사광 -->
+    <path
+        android:pathData="M110,104 L134,104"
+        android:strokeWidth="7"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.55"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M243,104 L267,104"
+        android:strokeWidth="7"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.55"
+        android:strokeLineCap="round" />
+</vector>
