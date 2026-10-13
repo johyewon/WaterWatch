@@ -96,6 +96,8 @@ class HydrationRepositoryTest {
         override suspend fun writeHydrationMl(ml: Double) {
             writtenMl = ml
         }
+
+        override suspend fun deleteLatestTodayRecord(): Boolean = false
     }
 
     private class FakeWearSyncDataSource(

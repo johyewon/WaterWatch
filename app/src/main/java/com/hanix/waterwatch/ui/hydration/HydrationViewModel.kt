@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanix.waterwatch.data.repo.HydrationRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +44,8 @@ class HydrationViewModel(
     private val _requestPermissions = Channel<Unit>(Channel.BUFFERED)
     val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()
 
+    private var intakeChangeJob: Job? = null
+
     init {
         loadPermissionState()
     }
@@ -55,13 +59,40 @@ class HydrationViewModel(
 
     /** 기록 후 총량을 다시 읽는다. 조회 경로에 워치 발행이 물려 있어 워치까지 같이 갱신된다. */
     fun recordIntake(ml: Double) {
-        viewModelScope.launch {
+        launchIntakeChange {
             runCatching { hydrationRepository.recordIntake(ml) }
                 .onSuccess {
                     Log.i(TAG, "기록 성공 ml=$ml")
                     loadToday()
                 }
                 .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
+        }
+    }
+
+    /** 기록과 같은 이유로 취소 후에도 총량을 다시 읽어 워치까지 갱신한다. */
+    fun undoLastIntake() {
+        launchIntakeChange {
+            runCatching { hydrationRepository.undoLastIntake() }
+                .onSuccess { deleted ->
+                    Log.i(TAG, "기록 취소 deleted=$deleted")
+                    if (deleted) loadToday()
+                }
+                .onFailure { Log.e(TAG, "기록 취소 실패", it) }
+        }
+    }
+
+    /**
+     * 기록·취소는 한 번에 하나만 한다. 그 사이에 들어온 터치는 버린다.
+     * 처리 자체는 수십 ms 라 끝난 뒤에도 잠깐 더 막아야 연타가 걸러진다.
+     */
+    private fun launchIntakeChange(block: suspend () -> Unit) {
+        if (intakeChangeJob?.isActive == true) {
+            Log.i(TAG, "처리 중이라 터치 무시")
+            return
+        }
+        intakeChangeJob = viewModelScope.launch {
+            block()
+            delay(INTAKE_CHANGE_COOLDOWN_MS)
         }
     }
 
@@ -96,5 +127,6 @@ class HydrationViewModel(
 
     companion object {
         private const val TAG = "WaterWatch/HC"
+        private const val INTAKE_CHANGE_COOLDOWN_MS = 500L
     }
 }

@@ -1,6 +1,8 @@
 package com.hanix.waterwatch.data.repo
 
 import android.util.Log
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
@@ -34,6 +36,8 @@ class HydrationRepository(
         healthConnectDataSource.writeHydrationMl(ml)
     }
 
+    suspend fun undoLastIntake(): Boolean = healthConnectDataSource.deleteLatestTodayRecord()
+
     suspend fun isWatchConnected(): Boolean = wearSyncDataSource.isWatchConnected()
 
     suspend fun sendRecordResult(nodeId: String, success: Boolean) {
@@ -43,7 +47,13 @@ class HydrationRepository(
     /** 워치 미페어링·Wearable API 없음은 폰 기능과 무관하므로 조회 실패로 올리지 않는다. */
     private suspend fun publishToWear(ml: Double?) {
         runCatching { wearSyncDataSource.publishTodayTotal(ml) }
-            .onFailure { Log.w(TAG, "워치 발행 실패 — 폰 조회 결과는 유효", it) }
+            .onFailure {
+                if (it is ApiException && it.statusCode == CommonStatusCodes.API_NOT_CONNECTED) {
+                    Log.i(TAG, "워치 없음 — 발행 건너뜀")
+                } else {
+                    Log.w(TAG, "워치 발행 실패 — 폰 조회 결과는 유효", it)
+                }
+            }
     }
 
     companion object {

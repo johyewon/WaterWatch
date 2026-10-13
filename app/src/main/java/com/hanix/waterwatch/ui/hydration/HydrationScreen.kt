@@ -27,6 +27,7 @@ import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /** 한 번 눌러서 바로 기록하는 용량(ml) */
 private val QUICK_SERVINGS_ML = listOf(120.0, 250.0)
@@ -41,7 +42,6 @@ private val ITEM_SPACING = 12.dp
 fun HydrationRoute(
     modifier: Modifier = Modifier,
     viewModel: HydrationViewModel = viewModel {
-
         HydrationViewModel(hydrationRepository = ServiceLocator.hydrationRepository)
     }
 ) {
@@ -69,6 +69,7 @@ fun HydrationRoute(
         total = total,
         goalMl = goalMl,
         onRecordClick = viewModel::recordIntake,
+        onUndoClick = viewModel::undoLastIntake,
         modifier = modifier
     )
 }
@@ -86,7 +87,8 @@ fun HydrationScreen(
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val totalMl = total?.getOrNull()?.toInt() ?: 0
+    // Health Connect 집계는 1089.9999… 처럼 오차가 섞여 와서 버리지 않고 반올림한다.
+    val totalMl = total?.getOrNull()?.roundToInt() ?: 0
 
     Column(
         modifier = modifier

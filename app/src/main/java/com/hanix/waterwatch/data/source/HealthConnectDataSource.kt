@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HydrationRecord
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Volume
 import java.time.Instant
@@ -28,6 +30,9 @@ interface HealthConnectDataSource {
     suspend fun readTodayTotalMl(): Double?
 
     suspend fun writeHydrationMl(ml: Double)
+
+    /** 오늘 이 앱이 쓴 기록 중 가장 최근 것을 삭제. 지울 기록이 없으면 false */
+    suspend fun deleteLatestTodayRecord(): Boolean
 
     companion object {
 
@@ -68,10 +73,7 @@ internal class HealthConnectDataSourceImpl(
         val response = client.aggregate(
             AggregateRequest(
                 metrics = setOf(HydrationRecord.VOLUME_TOTAL),
-                timeRangeFilter = TimeRangeFilter.between(
-                    LocalDate.now().atStartOfDay(),
-                    LocalDateTime.now()
-                )
+                timeRangeFilter = todayUntilNow()
             )
         )
         return response[HydrationRecord.VOLUME_TOTAL]?.inMilliliters
@@ -98,6 +100,29 @@ internal class HealthConnectDataSourceImpl(
             )
         )
     }
+
+    override suspend fun deleteLatestTodayRecord(): Boolean {
+        // 워치 기록도 폰 앱이 대신 써서 이 출처에 포함된다.
+        val latest = client.readRecords(
+            ReadRecordsRequest(
+                recordType = HydrationRecord::class,
+                timeRangeFilter = todayUntilNow(),
+                dataOriginFilter = setOf(DataOrigin(context.packageName)),
+                ascendingOrder = false,
+                pageSize = 1
+            )
+        ).records.firstOrNull() ?: return false
+
+        client.deleteRecords(
+            recordType = HydrationRecord::class,
+            recordIdsList = listOf(latest.metadata.id),
+            clientRecordIdsList = emptyList()
+        )
+        return true
+    }
+
+    private fun todayUntilNow(): TimeRangeFilter =
+        TimeRangeFilter.between(LocalDate.now().atStartOfDay(), LocalDateTime.now())
 
     private suspend fun hasGranted(permissions: Set<String>): Boolean =
         client.permissionController.getGrantedPermissions().containsAll(permissions)
