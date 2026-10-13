@@ -10,7 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.hanix.waterwatch.ui.theme.Spacing
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 
 /**
@@ -29,7 +29,7 @@ class PermissionsRationaleActivity : ComponentActivity() {
                     Column(
                         Modifier
                             .padding(inner)
-                            .padding(24.dp)
+                            .padding(Spacing.XLarge)
                     ) {
                         Text(
                             text = "수분 섭취 데이터 사용 안내",

@@ -26,11 +26,12 @@ import androidx.compose.ui.unit.dp
 import com.hanix.waterwatch.R
 import com.hanix.waterwatch.ui.theme.Accent
 import com.hanix.waterwatch.ui.theme.Ink
+import com.hanix.waterwatch.ui.theme.Spacing
 import com.hanix.waterwatch.ui.theme.ToastBackground
 import com.hanix.waterwatch.ui.theme.ToastTextStyle
 import kotlin.math.roundToInt
 
-// 크기·시간은 디자인 프로토타입 값 그대로. 색·글자·모서리는 테마에서 가져온다.
+// 크기·시간은 디자인 프로토타입 값 그대로. 색·글자·모서리·간격은 테마에서 가져온다.
 
 private val TOAST_MIN_HEIGHT = 52.dp
 
@@ -58,12 +59,11 @@ fun RecordedToast(ml: Double, modifier: Modifier = Modifier) {
             }
             .fillMaxWidth()
             .defaultMinSize(minHeight = TOAST_MIN_HEIGHT)
-            // 프로토타입 모서리 12dp 는 Material3 기본 medium 과 같다.
             .background(ToastBackground, MaterialTheme.shapes.medium)
             .padding(horizontal = 18.dp, vertical = 14.dp)
             // 화면을 보지 않는 사용자에게도 기록 결과를 읽어준다.
             .semantics { liveRegion = LiveRegionMode.Polite },
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Small, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(painter = painterResource(R.drawable.ic_toast_check), contentDescription = null, tint = Accent)

@@ -24,23 +24,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.locator.ServiceLocator
+import com.hanix.waterwatch.ui.theme.Spacing
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
+import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.roundToInt
 
 /** 한 번 눌러서 바로 기록하는 용량(ml) */
 private val QUICK_SERVINGS_ML = listOf(120.0, 250.0)
 
 private val DATE_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
 
-private val SCREEN_PADDING = 24.dp
-
-private val ITEM_SPACING = 12.dp
-
 /** 기록 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
-private val TOAST_SIDE_MARGIN = 20.dp
 private val TOAST_BOTTOM_MARGIN = 150.dp
 
 @Composable
@@ -107,9 +103,9 @@ fun HydrationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(SCREEN_PADDING),
+                .padding(Spacing.XLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(ITEM_SPACING)
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
             TextButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.End)) {
                 Text(text = "설정")
@@ -131,7 +127,7 @@ fun HydrationScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             val recordEnabled = granted == true
-            Row(horizontalArrangement = Arrangement.spacedBy(ITEM_SPACING)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
                 QUICK_SERVINGS_ML.forEach { ml ->
                     Button(
                         onClick = { onRecordClick(ml) },
@@ -160,7 +156,7 @@ fun HydrationScreen(
                 ml = recordedToastMl,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(start = TOAST_SIDE_MARGIN, end = TOAST_SIDE_MARGIN, bottom = TOAST_BOTTOM_MARGIN)
+                    .padding(start = Spacing.Large, end = Spacing.Large, bottom = TOAST_BOTTOM_MARGIN)
             )
         }
     }
