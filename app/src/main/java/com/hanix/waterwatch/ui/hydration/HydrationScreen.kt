@@ -94,6 +94,7 @@ fun HydrationScreen(
     val progress = goalMl?.let { (totalMl.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
 
     Box(modifier = modifier.fillMaxSize()) {
+        HydrationBackground(progress = progress, modifier = Modifier.fillMaxSize())
         DuckBlock(progress = progress, modifier = Modifier.fillMaxSize())
 
         Column(
