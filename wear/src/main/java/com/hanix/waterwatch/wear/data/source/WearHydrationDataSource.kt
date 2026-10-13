@@ -11,11 +11,12 @@ import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import com.hanix.waterwatch.common.KEY_EPOCH_DAY
+import com.hanix.waterwatch.common.KEY_GOAL_ML
 import com.hanix.waterwatch.common.KEY_TOTAL_ML
 import com.hanix.waterwatch.common.LOG_RESULT_OK
 import com.hanix.waterwatch.common.PATH_LOG_HYDRATION
 import com.hanix.waterwatch.common.PATH_LOG_RESULT
-import com.hanix.waterwatch.common.PATH_TODAY_TOTAL
+import com.hanix.waterwatch.common.PATH_TODAY_INTAKE
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -25,8 +26,8 @@ import java.time.LocalDate
 /** 폰과의 수분 섭취 데이터 송수신 */
 interface WearHydrationDataSource {
 
-    /** 폰이 발행한 오늘 총량. 오늘 것이 아닌 값은 흘리지 않는다. */
-    fun todayTotalMl(): Flow<Int>
+    /** 폰이 발행한 오늘 총량과 목표. 날짜가 오늘이 아닌 값은 주지 않는다. */
+    fun todayIntake(): Flow<TodayIntake>
 
     /** 폰이 회신한 기록 성공 여부 */
     fun recordResults(): Flow<Boolean>
@@ -44,18 +45,18 @@ internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationData
      * 앱이 떠 있는 동안만 듣는다. 타일·컴플리케이션이 붙으면 WearableListenerService 로 옮겨야 한다.
      * 리스너를 붙이기 전에 싱크돼 있던 값은 이벤트로 오지 않으므로 최초 1회 직접 읽는다.
      */
-    override fun todayTotalMl(): Flow<Int> = callbackFlow {
+    override fun todayIntake(): Flow<TodayIntake> = callbackFlow {
         val listener = DataClient.OnDataChangedListener { events ->
             events.filter { it.type == DataEvent.TYPE_CHANGED }
-                .mapNotNull { it.dataItem.todayTotalMlOrNull() }
+                .mapNotNull { it.dataItem.todayIntakeOrNull() }
                 .forEach { trySend(it) }
         }
 
-        // Play services 미준비·미연결이면 Task 가 실패한다. 구독이 통째로 죽지 않도록 삼킨다.
+        // Play services 미준비·미연결이면 Task 가 실패한다. 구독이 통째로 끝나지 않도록 로그만 남긴다.
         runCatching {
             dataClient.addListener(listener).await()
-            cachedTodayTotalMl().forEach { trySend(it) }
-        }.onFailure { Log.w(TAG, "총량 구독 실패", it) }
+            cachedTodayIntake().forEach { trySend(it) }
+        }.onFailure { Log.w(TAG, "오늘 섭취 상태 구독 실패", it) }
 
         awaitClose { dataClient.removeListener(listener) }
     }
@@ -85,23 +86,23 @@ internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationData
         }
     }
 
-    private suspend fun cachedTodayTotalMl(): List<Int> {
+    private suspend fun cachedTodayIntake(): List<TodayIntake> {
         val uri = Uri.Builder()
             .scheme(PutDataRequest.WEAR_URI_SCHEME)
-            .path(PATH_TODAY_TOTAL)
+            .path(PATH_TODAY_INTAKE)
             .build()
 
         val items = dataClient.getDataItems(uri).await()
         return try {
-            items.mapNotNull { it.todayTotalMlOrNull() }
+            items.mapNotNull { it.todayIntakeOrNull() }
         } finally {
             items.release()
         }
     }
 
     /** DataItem 은 폰이 다시 발행할 때까지 남아 있어서, 날짜를 안 보면 어제 총량을 오늘 값으로 표시하게 된다. */
-    private fun DataItem.todayTotalMlOrNull(): Int? {
-        if (uri.path != PATH_TODAY_TOTAL) return null
+    private fun DataItem.todayIntakeOrNull(): TodayIntake? {
+        if (uri.path != PATH_TODAY_INTAKE) return null
 
         val dataMap = DataMapItem.fromDataItem(this).dataMap
         val epochDay = dataMap.getLong(KEY_EPOCH_DAY)
@@ -109,7 +110,7 @@ internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationData
             Log.i(TAG, "오늘 값이 아니라 무시 — epochDay=$epochDay")
             return null
         }
-        return dataMap.getInt(KEY_TOTAL_ML)
+        return TodayIntake(totalMl = dataMap.getInt(KEY_TOTAL_ML), goalMl = dataMap.getInt(KEY_GOAL_ML))
     }
 
     companion object {

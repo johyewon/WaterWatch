@@ -4,7 +4,7 @@ import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -24,6 +24,7 @@ class HydrationRepositoryTest {
 
         assertEquals(250.0, repository.todayTotalMl())
         assertEquals(250.0, wearSyncDataSource.publishedMl)
+        assertEquals(GOAL_ML, wearSyncDataSource.publishedGoalMl)
     }
 
     @Test
@@ -106,12 +107,14 @@ class HydrationRepositoryTest {
 
         var published: Boolean = false
         var publishedMl: Double? = null
+        var publishedGoalMl: Int? = null
         var sentResult: Pair<String, Boolean>? = null
 
-        override suspend fun publishTodayTotal(ml: Double?) {
+        override suspend fun publishToday(totalMl: Double?, goalMl: Int) {
             if (failOnPublish) throw IllegalStateException("Wearable API is not available")
             published = true
-            publishedMl = ml
+            publishedMl = totalMl
+            publishedGoalMl = goalMl
         }
 
         override suspend fun isWatchConnected(): Boolean = false
@@ -122,6 +125,10 @@ class HydrationRepositoryTest {
     }
 
     private object FakeGoalDataSource : GoalDataSource {
-        override val goalMl: Flow<Int> = emptyFlow()
+        override val goalMl: Flow<Int> = flowOf(GOAL_ML)
+    }
+
+    private companion object {
+        const val GOAL_ML = 2_000
     }
 }

@@ -29,12 +29,12 @@ fun WearHydrationRoute(modifier: Modifier = Modifier) {
         WearHydrationViewModel(wearHydrationDataSource = ServiceLocator.wearHydrationDataSource)
     }
 
-    val totalMl by viewModel.todayTotalMl.collectAsStateWithLifecycle()
+    val todayIntake by viewModel.todayIntake.collectAsStateWithLifecycle()
     val sendResult by viewModel.sendResult.collectAsStateWithLifecycle()
     val recordAccepted by viewModel.recordAccepted.collectAsStateWithLifecycle()
 
     WearHydrationScreen(
-        totalMl = totalMl,
+        totalMl = todayIntake?.totalMl,
         sendFailed = sendResult?.isFailure == true,
         recordFailed = recordAccepted == false,
         onRecordClick = { viewModel.recordIntake(SERVING_ML) },

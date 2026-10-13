@@ -5,18 +5,19 @@ import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.hanix.waterwatch.common.KEY_EPOCH_DAY
+import com.hanix.waterwatch.common.KEY_GOAL_ML
 import com.hanix.waterwatch.common.KEY_TOTAL_ML
 import com.hanix.waterwatch.common.LOG_RESULT_OK
 import com.hanix.waterwatch.common.PATH_LOG_RESULT
-import com.hanix.waterwatch.common.PATH_TODAY_TOTAL
+import com.hanix.waterwatch.common.PATH_TODAY_INTAKE
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 
 /** 워치로의 수분 섭취 데이터 전송 */
 interface WearSyncDataSource {
 
-    /** 오늘 총량을 워치가 구독하는 DataItem 으로 발행. 기록이 없으면 ml 은 null */
-    suspend fun publishTodayTotal(ml: Double?)
+    /** 오늘 총량과 목표를 워치가 구독하는 DataItem 으로 발행. 기록이 없으면 totalMl 은 null */
+    suspend fun publishToday(totalMl: Double?, goalMl: Int)
 
     suspend fun isWatchConnected(): Boolean
 
@@ -31,14 +32,15 @@ internal class WearSyncDataSourceImpl(context: Context) : WearSyncDataSource {
     private val messageClient = Wearable.getMessageClient(context)
 
     /*
-     * 총량·날짜가 모두 이전과 같으면 DataItem 이 안 바뀌어 워치에 이벤트가 가지 않는다.
+     * 총량·목표·날짜가 모두 이전과 같으면 DataItem 이 안 바뀌어 워치에 이벤트가 가지 않는다.
      * 워치가 표시할 내용이 동일하므로 의도된 동작이다.
      * 연결이 끊겨 있어도 DataClient 가 버퍼링해두고 재연결 시 싱크한다.
      */
-    override suspend fun publishTodayTotal(ml: Double?) {
-        val request = PutDataMapRequest.create(PATH_TODAY_TOTAL)
+    override suspend fun publishToday(totalMl: Double?, goalMl: Int) {
+        val request = PutDataMapRequest.create(PATH_TODAY_INTAKE)
             .apply {
-                dataMap.putInt(KEY_TOTAL_ML, (ml ?: 0.0).toInt())
+                dataMap.putInt(KEY_TOTAL_ML, (totalMl ?: 0.0).toInt())
+                dataMap.putInt(KEY_GOAL_ML, goalMl)
                 dataMap.putLong(KEY_EPOCH_DAY, LocalDate.now().toEpochDay())
             }
             .asPutDataRequest()

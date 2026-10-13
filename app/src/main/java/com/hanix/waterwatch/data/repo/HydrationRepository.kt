@@ -7,6 +7,7 @@ import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 /** 섭취 기록은 Health Connect 를 단일 저장소로 쓰고, 조회 결과를 워치에 함께 반영한다. */
 class HydrationRepository(
@@ -44,9 +45,10 @@ class HydrationRepository(
         wearSyncDataSource.sendRecordResult(nodeId = nodeId, success = success)
     }
 
+    // ponytail: 목표는 총량을 조회할 때만 같이 보낸다. 폰에서 목표를 바꾸는 화면이 생기면 그때도 발행해야 한다.
     /** 워치 미페어링·Wearable API 없음은 폰 기능과 무관하므로 조회 실패로 올리지 않는다. */
-    private suspend fun publishToWear(ml: Double?) {
-        runCatching { wearSyncDataSource.publishTodayTotal(ml) }
+    private suspend fun publishToWear(totalMl: Double?) {
+        runCatching { wearSyncDataSource.publishToday(totalMl, goalDataSource.goalMl.first()) }
             .onFailure {
                 if (it is ApiException && it.statusCode == CommonStatusCodes.API_NOT_CONNECTED) {
                     Log.i(TAG, "워치 없음 — 발행 건너뜀")

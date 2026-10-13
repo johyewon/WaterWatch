@@ -3,11 +3,13 @@ package com.hanix.waterwatch.wear.ui.hydration
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanix.waterwatch.wear.data.source.TodayIntake
 import com.hanix.waterwatch.wear.data.source.WearHydrationDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -16,7 +18,8 @@ class WearHydrationViewModel(
 ) : ViewModel() {
 
     /** null 은 폰에서 아직 오늘 값을 받지 못한 상태 */
-    val todayTotalMl: StateFlow<Int?> = wearHydrationDataSource.todayTotalMl()
+    val todayIntake: StateFlow<TodayIntake?> = wearHydrationDataSource.todayIntake()
+        .onEach { Log.i(TAG, "오늘 섭취 상태 수신 $it") }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS),

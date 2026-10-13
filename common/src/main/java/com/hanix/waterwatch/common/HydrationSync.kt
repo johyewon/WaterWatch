@@ -2,20 +2,23 @@ package com.hanix.waterwatch.common
 
 /*
  * 폰과 워치가 같은 문자열을 봐야 통신이 성립한다.
- * 한쪽만 바뀌면 예외 없이 조용히 안 오기 때문에 두 모듈이 이 파일만 참조한다.
+ * 한쪽만 바뀌면 예외도 없이 값이 오지 않기 때문에 두 모듈이 이 파일만 참조한다.
  *
  * 주의: PATH_LOG_HYDRATION 은 app 매니페스트의 service intent-filter 에도 복제돼 있다.
  * 매니페스트는 Kotlin 상수를 참조할 수 없어 HydrationLogPathTest 로 두 값의 일치를 검증한다.
  */
 
-/** 폰이 put, 워치가 수신. 오늘 총 섭취량 상태. */
-const val PATH_TODAY_TOTAL = "/hydration/today"
+/** 폰이 put, 워치가 수신. 오늘 섭취 상태(총량·목표). */
+const val PATH_TODAY_INTAKE = "/hydration/today"
 
-/** [PATH_TODAY_TOTAL] DataItem 의 총량(ml). 기록이 없으면 0. */
+/** [PATH_TODAY_INTAKE] DataItem 의 총량(ml). 기록이 없으면 0. */
 const val KEY_TOTAL_ML = "total_ml"
 
+/** [PATH_TODAY_INTAKE] DataItem 의 하루 목표(ml). 총량과 같은 시점의 값이 가도록 같은 DataItem 에 싣는다. */
+const val KEY_GOAL_ML = "goal_ml"
+
 /**
- * [PATH_TODAY_TOTAL] DataItem 이 어느 날짜의 총량인지. LocalDate.toEpochDay 값.
+ * [PATH_TODAY_INTAKE] DataItem 이 어느 날짜의 총량인지. LocalDate.toEpochDay 값.
  *
  * DataItem 은 폰이 다시 발행할 때까지 워치에 남아 있어서, 날짜 없이는 어제 총량을
  * 오늘 값으로 표시하게 된다.
