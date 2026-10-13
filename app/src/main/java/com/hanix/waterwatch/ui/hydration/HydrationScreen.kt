@@ -2,6 +2,7 @@ package com.hanix.waterwatch.ui.hydration
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -90,54 +91,58 @@ fun HydrationScreen(
     // Health Connect 집계는 1089.9999… 처럼 오차가 섞여 와서 버리지 않고 반올림한다.
     val totalMl = total?.getOrNull()?.roundToInt() ?: 0
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(SCREEN_PADDING),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(ITEM_SPACING)
-    ) {
-        TextButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.End)) {
-            Text(text = "설정")
-        }
+    Box(modifier = modifier.fillMaxSize()) {
+        DuckBlock(modifier = Modifier.fillMaxSize())
 
-        Text(text = today.format(DATE_FORMATTER), style = MaterialTheme.typography.titleMedium)
-        Text(text = "%,d ml".format(totalMl), style = MaterialTheme.typography.displayLarge)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(SCREEN_PADDING),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(ITEM_SPACING)
+        ) {
+            TextButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.End)) {
+                Text(text = "설정")
+            }
 
-        val failure = total?.exceptionOrNull()
-        when {
-            failure != null -> Text(text = "조회 실패 — ${failure.javaClass.simpleName}")
-            goalMl != null -> Text(text = remainingLabel(totalMl, goalMl))
-        }
+            Text(text = today.format(DATE_FORMATTER), style = MaterialTheme.typography.titleMedium)
+            Text(text = "%,d ml".format(totalMl), style = MaterialTheme.typography.displayLarge)
 
-        if (healthConnectAvailable.not()) {
-            Text(text = "이 기기에서 Health Connect 를 사용할 수 없음")
-        }
+            val failure = total?.exceptionOrNull()
+            when {
+                failure != null -> Text(text = "조회 실패 — ${failure.javaClass.simpleName}")
+                goalMl != null -> Text(text = remainingLabel(totalMl, goalMl))
+            }
 
-        Spacer(modifier = Modifier.weight(1f))
+            if (healthConnectAvailable.not()) {
+                Text(text = "이 기기에서 Health Connect 를 사용할 수 없음")
+            }
 
-        val recordEnabled = granted == true
-        Row(horizontalArrangement = Arrangement.spacedBy(ITEM_SPACING)) {
-            QUICK_SERVINGS_ML.forEach { ml ->
+            Spacer(modifier = Modifier.weight(1f))
+
+            val recordEnabled = granted == true
+            Row(horizontalArrangement = Arrangement.spacedBy(ITEM_SPACING)) {
+                QUICK_SERVINGS_ML.forEach { ml ->
+                    Button(
+                        onClick = { onRecordClick(ml) },
+                        enabled = recordEnabled,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = "+${ml.toInt()}ml")
+                    }
+                }
                 Button(
-                    onClick = { onRecordClick(ml) },
+                    onClick = onCustomInputClick,
                     enabled = recordEnabled,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(text = "+${ml.toInt()}ml")
+                    Text(text = "직접입력")
                 }
             }
-            Button(
-                onClick = onCustomInputClick,
-                enabled = recordEnabled,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = "직접입력")
-            }
-        }
 
-        TextButton(onClick = onUndoClick, enabled = recordEnabled) {
-            Text(text = "이전 기록 취소하기")
+            TextButton(onClick = onUndoClick, enabled = recordEnabled) {
+                Text(text = "이전 기록 취소하기")
+            }
         }
     }
 }
