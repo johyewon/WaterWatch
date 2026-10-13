@@ -129,9 +129,9 @@ fun HydrationBackground(progress: Float, modifier: Modifier = Modifier) {
 }
 
 /**
- * 질감 이미지를 타일로 깔고 대각선으로 흘린다. 아래 층과 soft-light 로 섞인다.
+ * 질감 이미지를 타일로 깔고 대각선으로 천천히 움직인다. 아래 층과는 soft-light 로 섞는다.
  *
- * 이 Spacer 에 graphicsLayer 를 달면 따로 그려진 뒤 합쳐져서 soft-light 가 아래 층과 섞이지 않는다.
+ * 이 Spacer 에 graphicsLayer 를 달면 따로 그린 다음 합치기 때문에 soft-light 가 아래 층과 섞이지 않는다.
  */
 @Composable
 private fun Grain(modifier: Modifier = Modifier) {

@@ -98,7 +98,7 @@ fun HydrationScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         HydrationBackground(progress = progress, modifier = Modifier.fillMaxSize())
-        DuckBlock(progress = progress, modifier = Modifier.fillMaxSize())
+        Duck(progress = progress, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier

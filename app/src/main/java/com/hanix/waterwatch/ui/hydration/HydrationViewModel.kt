@@ -39,7 +39,7 @@ class HydrationViewModel(
     /*
      * 권한 시트 띄우기는 상태가 아니라 일회성 액션이다. StateFlow 로 두면 화면이 띄운 뒤
      * 수동으로 꺼줘야 하고, Activity 재생성마다 다시 뜬다.
-     * Channel 은 수집 전에 보낸 값도 버퍼링하고 재수집 시 다시 흘리지 않는다.
+     * Channel 은 수집 전에 보낸 값도 버퍼에 담아 두고, 다시 수집해도 같은 값을 또 주지 않는다.
      */
     private val _requestPermissions = Channel<Unit>(Channel.BUFFERED)
     val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()

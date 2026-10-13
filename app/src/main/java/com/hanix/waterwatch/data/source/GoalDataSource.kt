@@ -13,7 +13,7 @@ import java.io.IOException
 /** 하루 수분 섭취 목표 */
 interface GoalDataSource {
 
-    /** 저장된 값이 없으면 기본 목표를 흘린다. */
+    /** 저장된 값이 없으면 기본 목표를 준다. */
     val goalMl: Flow<Int>
 }
 

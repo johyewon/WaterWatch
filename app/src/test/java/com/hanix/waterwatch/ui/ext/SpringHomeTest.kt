@@ -1,6 +1,7 @@
-package com.hanix.waterwatch.ui.hydration
+package com.hanix.waterwatch.ui.ext
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.MonotonicFrameClock
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -14,7 +15,7 @@ class SpringHomeTest {
         val position = Animatable(90f)
         val wallHits = mutableListOf<Float>()
 
-        position.springHome(range = 100f, initialVelocity = 2_000f) { wallHits += it }
+        position.springHome(range = 100f, initialVelocity = 2_000f, spring = SPRING, restitution = 0.62f) { wallHits += it }
 
         assertTrue(wallHits.isNotEmpty())
         assertEquals(0f, position.value, 0.5f)
@@ -25,12 +26,15 @@ class SpringHomeTest {
         val position = Animatable(10f)
         val wallHits = mutableListOf<Float>()
 
-        position.springHome(range = 100f, initialVelocity = 0f) { wallHits += it }
+        position.springHome(range = 100f, initialVelocity = 0f, spring = SPRING, restitution = 0.62f) { wallHits += it }
 
         assertTrue(wallHits.isEmpty())
         assertEquals(0f, position.value, 0.5f)
     }
 }
+
+// 오리가 쓰는 것과 같은 스프링
+private val SPRING = spring<Float>(dampingRatio = 0.24f, stiffness = 34f)
 
 /** 호출될 때마다 16ms 씩 흐르는 프레임 시계 */
 private class FakeFrameClock : MonotonicFrameClock {
