@@ -1,27 +1,65 @@
 package com.hanix.waterwatch.wear.ui.hydration
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.hanix.waterwatch.wear.R
+import com.hanix.waterwatch.wear.data.source.TodayIntake
 import com.hanix.waterwatch.wear.locator.ServiceLocator
+import com.hanix.waterwatch.wear.ui.theme.BackgroundBottom
+import com.hanix.waterwatch.wear.ui.theme.BackgroundMiddle
+import com.hanix.waterwatch.wear.ui.theme.BackgroundTop
+import com.hanix.waterwatch.wear.ui.theme.ButtonBorder
+import com.hanix.waterwatch.wear.ui.theme.ButtonContainer
+import com.hanix.waterwatch.wear.ui.theme.ButtonContent
+import com.hanix.waterwatch.wear.ui.theme.ButtonIcon
+import com.hanix.waterwatch.wear.ui.theme.Ink
 
-/** 한 잔 기록 단위(ml) */
-private const val SERVING_ML = 250
+// 크기는 디자인 프로토타입(갤럭시 워치 384px 보드)을 2배 해상도로 보고 절반으로 옮겼다.
 
-private val SCREEN_PADDING = 16.dp
+/** 한 번 눌러서 바로 기록하는 용량(ml) */
+private val QUICK_SERVINGS_ML = listOf(120, 250)
+
+private val BACKGROUND = Brush.verticalGradient(
+    0f to BackgroundTop,
+    0.6f to BackgroundMiddle,
+    1f to BackgroundBottom
+)
+
+private val HEADER_PADDING_TOP = 17.dp
+private val HEADER_PADDING_HORIZONTAL = 20.dp
+
+private val BUTTONS_PADDING_HORIZONTAL = 21.dp
+private val BUTTONS_PADDING_BOTTOM = 36.dp
+private val BUTTON_SPACING = 3.dp
+private val BUTTON_HEIGHT = 48.dp
+private val BUTTON_ICON_SIZE = 10.dp
 
 @Composable
 fun WearHydrationRoute(modifier: Modifier = Modifier) {
@@ -34,47 +72,123 @@ fun WearHydrationRoute(modifier: Modifier = Modifier) {
     val recordAccepted by viewModel.recordAccepted.collectAsStateWithLifecycle()
 
     WearHydrationScreen(
-        totalMl = todayIntake?.totalMl,
+        todayIntake = todayIntake,
         sendFailed = sendResult?.isFailure == true,
         recordFailed = recordAccepted == false,
-        onRecordClick = { viewModel.recordIntake(SERVING_ML) },
+        onRecordClick = viewModel::recordIntake,
         modifier = modifier
     )
 }
 
+/** [todayIntake] 가 null 이면 폰에서 아직 오늘 값을 받지 못한 상태 */
 @Composable
 fun WearHydrationScreen(
-    totalMl: Int?,
+    todayIntake: TodayIntake?,
     sendFailed: Boolean = false,
     recordFailed: Boolean = false,
-    onRecordClick: () -> Unit = {},
+    onRecordClick: (ml: Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(SCREEN_PADDING),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(BACKGROUND)
     ) {
-        Text(text = totalMl?.let { "오늘 $it ml" } ?: "폰 연결 대기")
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = HEADER_PADDING_TOP, start = HEADER_PADDING_HORIZONTAL, end = HEADER_PADDING_HORIZONTAL),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (todayIntake == null) {
+                Text(text = "폰 연결 대기", color = Ink)
+            } else {
+                TotalMl(totalMl = todayIntake.totalMl)
+                Text(
+                    text = remainingLabel(todayIntake),
+                    color = Ink,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
 
-        Button(onClick = onRecordClick) {
-            Text(text = "+$SERVING_ML ml")
+            when {
+                sendFailed -> Text(text = "전송 실패 — 폰 연결 확인", color = Ink)
+                recordFailed -> Text(text = "폰에서 기록 실패", color = Ink)
+            }
         }
 
-        when {
-            sendFailed -> Text(text = "전송 실패 — 폰 연결 확인")
-            recordFailed -> Text(text = "폰에서 기록 실패")
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(
+                    start = BUTTONS_PADDING_HORIZONTAL,
+                    end = BUTTONS_PADDING_HORIZONTAL,
+                    bottom = BUTTONS_PADDING_BOTTOM
+                ),
+            horizontalArrangement = Arrangement.spacedBy(BUTTON_SPACING)
+        ) {
+            QUICK_SERVINGS_ML.forEach { ml ->
+                QuickServingButton(
+                    ml = ml,
+                    onClick = { onRecordClick(ml) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun TotalMl(totalMl: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = "%,d".format(totalMl),
+            color = Ink,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = (-0.5).sp,
+            modifier = Modifier.alignByBaseline()
+        )
+        Text(text = "ml", color = Ink, fontSize = 14.sp, modifier = Modifier.alignByBaseline())
+    }
+}
+
+@Composable
+private fun QuickServingButton(ml: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(BUTTON_HEIGHT),
+        colors = ButtonDefaults.buttonColors(containerColor = ButtonContainer, contentColor = ButtonContent),
+        border = BorderStroke(1.dp, ButtonBorder)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_plus),
+                contentDescription = null,
+                tint = ButtonIcon,
+                modifier = Modifier.size(BUTTON_ICON_SIZE)
+            )
+            Text(text = "$ml", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+private fun remainingLabel(todayIntake: TodayIntake): String {
+    val remainingMl = todayIntake.goalMl - todayIntake.totalMl
+    return if (remainingMl <= 0) "목표를 채웠어요" else "%,dml 남았어요".format(remainingMl)
 }
 
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
 fun WearHydrationScreenPreview() {
     MaterialTheme {
-        WearHydrationScreen(totalMl = 750)
+        WearHydrationScreen(todayIntake = TodayIntake(totalMl = 800, goalMl = 2_000))
     }
 }
 
@@ -82,6 +196,6 @@ fun WearHydrationScreenPreview() {
 @Composable
 fun WearHydrationScreenWaitingPreview() {
     MaterialTheme {
-        WearHydrationScreen(totalMl = null, sendFailed = true)
+        WearHydrationScreen(todayIntake = null, sendFailed = true)
     }
 }
