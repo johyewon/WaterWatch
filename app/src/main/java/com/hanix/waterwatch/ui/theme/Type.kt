@@ -15,3 +15,9 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
+
+/** 기록 토스트 문구. 디자인 프로토타입 값 그대로, 가이드가 나오면 바꾼다. */
+val ToastTextStyle = TextStyle(
+    fontSize = 15.sp,
+    fontWeight = FontWeight.SemiBold
+)

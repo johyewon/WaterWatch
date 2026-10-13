@@ -30,3 +30,11 @@ val WaterEmptyBottom = Color(0xFF78B4EE)
 val WaterFullTop = Color(0xFF2E5BB8)
 val WaterFullMiddle = Color(0xFF1F4AA3)
 val WaterFullBottom = Color(0xFF122C7A)
+
+/** 기본 글자색 */
+val Ink = Color(0xFF0A2540)
+
+/** 강조색. 체크 표시 등 */
+val Accent = Color(0xFF2149A6)
+
+val ToastBackground = Color.White

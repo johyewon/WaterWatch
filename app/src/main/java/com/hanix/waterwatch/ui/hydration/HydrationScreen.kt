@@ -39,6 +39,10 @@ private val SCREEN_PADDING = 24.dp
 
 private val ITEM_SPACING = 12.dp
 
+/** 기록 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
+private val TOAST_SIDE_MARGIN = 20.dp
+private val TOAST_BOTTOM_MARGIN = 150.dp
+
 @Composable
 fun HydrationRoute(
     modifier: Modifier = Modifier,
@@ -49,6 +53,7 @@ fun HydrationRoute(
     val granted by viewModel.granted.collectAsStateWithLifecycle()
     val total by viewModel.total.collectAsStateWithLifecycle()
     val goalMl by viewModel.goalMl.collectAsStateWithLifecycle()
+    val recordedToastMl by viewModel.recordedToastMl.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -69,6 +74,7 @@ fun HydrationRoute(
         today = LocalDate.now(),
         total = total,
         goalMl = goalMl,
+        recordedToastMl = recordedToastMl,
         onRecordClick = viewModel::recordIntake,
         onUndoClick = viewModel::undoLastIntake,
         modifier = modifier
@@ -82,6 +88,7 @@ fun HydrationScreen(
     today: LocalDate,
     total: Result<Double?>?,
     goalMl: Int?,
+    recordedToastMl: Double? = null,
     onRecordClick: (ml: Double) -> Unit = {},
     onCustomInputClick: () -> Unit = {},
     onUndoClick: () -> Unit = {},
@@ -146,6 +153,15 @@ fun HydrationScreen(
             TextButton(onClick = onUndoClick, enabled = recordEnabled) {
                 Text(text = "이전 기록 취소하기")
             }
+        }
+
+        if (recordedToastMl != null) {
+            RecordedToast(
+                ml = recordedToastMl,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = TOAST_SIDE_MARGIN, end = TOAST_SIDE_MARGIN, bottom = TOAST_BOTTOM_MARGIN)
+            )
         }
     }
 }

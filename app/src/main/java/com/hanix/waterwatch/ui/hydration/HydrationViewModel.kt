@@ -44,7 +44,12 @@ class HydrationViewModel(
     private val _requestPermissions = Channel<Unit>(Channel.BUFFERED)
     val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()
 
+    /** 방금 기록한 양(ml). 토스트로 잠깐 보여주고, null 이면 숨긴다. */
+    private val _recordedToastMl = MutableStateFlow<Double?>(null)
+    val recordedToastMl: StateFlow<Double?> = _recordedToastMl.asStateFlow()
+
     private var intakeChangeJob: Job? = null
+    private var toastDismissJob: Job? = null
 
     init {
         loadPermissionState()
@@ -63,6 +68,7 @@ class HydrationViewModel(
             runCatching { hydrationRepository.recordIntake(ml) }
                 .onSuccess {
                     Log.i(TAG, "기록 성공 ml=$ml")
+                    showRecordedToast(ml)
                     loadToday()
                 }
                 .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
@@ -75,7 +81,11 @@ class HydrationViewModel(
             runCatching { hydrationRepository.undoLastIntake() }
                 .onSuccess { deleted ->
                     Log.i(TAG, "기록 취소 deleted=$deleted")
-                    if (deleted) loadToday()
+                    if (deleted) {
+                        // 방금 기록 토스트가 떠 있으면 취소한 기록을 가리키게 되므로 바로 내린다.
+                        hideRecordedToast()
+                        loadToday()
+                    }
                 }
                 .onFailure { Log.e(TAG, "기록 취소 실패", it) }
         }
@@ -94,6 +104,21 @@ class HydrationViewModel(
             block()
             delay(INTAKE_CHANGE_COOLDOWN_MS)
         }
+    }
+
+    /** 연달아 기록하면 내용만 바꾸고 사라질 시간을 다시 센다. */
+    private fun showRecordedToast(ml: Double) {
+        toastDismissJob?.cancel()
+        _recordedToastMl.value = ml
+        toastDismissJob = viewModelScope.launch {
+            delay(RECORDED_TOAST_MS)
+            _recordedToastMl.value = null
+        }
+    }
+
+    private fun hideRecordedToast() {
+        toastDismissJob?.cancel()
+        _recordedToastMl.value = null
     }
 
     private fun loadPermissionState() {
@@ -128,5 +153,6 @@ class HydrationViewModel(
     companion object {
         private const val TAG = "WaterWatch/HC"
         private const val INTAKE_CHANGE_COOLDOWN_MS = 500L
+        private const val RECORDED_TOAST_MS = 4_000L
     }
 }
