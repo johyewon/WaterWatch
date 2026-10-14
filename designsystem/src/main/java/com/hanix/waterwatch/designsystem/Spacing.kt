@@ -1,4 +1,4 @@
-package com.hanix.waterwatch.ui.theme
+package com.hanix.waterwatch.designsystem
 
 import androidx.compose.ui.unit.dp
 

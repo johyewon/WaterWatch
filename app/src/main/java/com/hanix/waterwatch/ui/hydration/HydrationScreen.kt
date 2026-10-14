@@ -23,8 +23,8 @@ import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
+import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.locator.ServiceLocator
-import com.hanix.waterwatch.ui.theme.Spacing
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 import kotlin.math.roundToInt
 import java.time.LocalDate

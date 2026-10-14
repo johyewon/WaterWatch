@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "WaterWatch"
 include(":common")
+include(":designsystem")
 include(":app")
 include(":wear")
  

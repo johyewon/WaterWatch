@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
 
     implementation(project(":common"))
+    implementation(project(":designsystem"))
 
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)

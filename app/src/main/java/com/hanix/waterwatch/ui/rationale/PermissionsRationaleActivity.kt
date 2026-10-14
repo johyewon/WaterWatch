@@ -10,7 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import com.hanix.waterwatch.ui.theme.Spacing
+import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 
 /**

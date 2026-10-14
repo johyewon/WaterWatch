@@ -29,17 +29,17 @@ import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.hanix.waterwatch.designsystem.BackgroundLightBottom
+import com.hanix.waterwatch.designsystem.BackgroundLightMiddle
+import com.hanix.waterwatch.designsystem.BackgroundLightTop
+import com.hanix.waterwatch.designsystem.ButtonBorder
+import com.hanix.waterwatch.designsystem.ButtonContainer
+import com.hanix.waterwatch.designsystem.ButtonContent
+import com.hanix.waterwatch.designsystem.ButtonIcon
+import com.hanix.waterwatch.designsystem.Ink
 import com.hanix.waterwatch.wear.R
 import com.hanix.waterwatch.wear.data.source.TodayIntake
 import com.hanix.waterwatch.wear.locator.ServiceLocator
-import com.hanix.waterwatch.wear.ui.theme.BackgroundBottom
-import com.hanix.waterwatch.wear.ui.theme.BackgroundMiddle
-import com.hanix.waterwatch.wear.ui.theme.BackgroundTop
-import com.hanix.waterwatch.wear.ui.theme.ButtonBorder
-import com.hanix.waterwatch.wear.ui.theme.ButtonContainer
-import com.hanix.waterwatch.wear.ui.theme.ButtonContent
-import com.hanix.waterwatch.wear.ui.theme.ButtonIcon
-import com.hanix.waterwatch.wear.ui.theme.Ink
 
 // 크기는 디자인 프로토타입(갤럭시 워치 384px 보드)을 2배 해상도로 보고 절반으로 옮겼다.
 
@@ -47,9 +47,9 @@ import com.hanix.waterwatch.wear.ui.theme.Ink
 private val QUICK_SERVINGS_ML = listOf(120, 250)
 
 private val BACKGROUND = Brush.verticalGradient(
-    0f to BackgroundTop,
-    0.6f to BackgroundMiddle,
-    1f to BackgroundBottom
+    0f to BackgroundLightTop,
+    0.55f to BackgroundLightMiddle,
+    1f to BackgroundLightBottom
 )
 
 private val HEADER_PADDING_TOP = 17.dp

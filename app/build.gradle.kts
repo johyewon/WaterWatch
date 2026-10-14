@@ -56,6 +56,7 @@ dependencies {
 
     implementation(libs.androidx.health.connect.client)
     implementation(project(":common"))
+    implementation(project(":designsystem"))
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.datastore.preferences)

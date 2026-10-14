@@ -27,21 +27,21 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.hanix.waterwatch.R
-import com.hanix.waterwatch.ui.theme.BackgroundDeepBottom
-import com.hanix.waterwatch.ui.theme.BackgroundDeepMiddle
-import com.hanix.waterwatch.ui.theme.BackgroundDeepTop
-import com.hanix.waterwatch.ui.theme.BackgroundLightBottom
-import com.hanix.waterwatch.ui.theme.BackgroundLightMiddle
-import com.hanix.waterwatch.ui.theme.BackgroundLightTop
-import com.hanix.waterwatch.ui.theme.WaterEmptyBottom
-import com.hanix.waterwatch.ui.theme.WaterEmptyMiddle
-import com.hanix.waterwatch.ui.theme.WaterEmptyTop
-import com.hanix.waterwatch.ui.theme.WaterFullBottom
-import com.hanix.waterwatch.ui.theme.WaterFullMiddle
-import com.hanix.waterwatch.ui.theme.WaterFullTop
+import com.hanix.waterwatch.designsystem.BackgroundDeepBottom
+import com.hanix.waterwatch.designsystem.BackgroundDeepMiddle
+import com.hanix.waterwatch.designsystem.BackgroundDeepTop
+import com.hanix.waterwatch.designsystem.BackgroundLightBottom
+import com.hanix.waterwatch.designsystem.BackgroundLightMiddle
+import com.hanix.waterwatch.designsystem.BackgroundLightTop
+import com.hanix.waterwatch.designsystem.WaterEmptyBottom
+import com.hanix.waterwatch.designsystem.WaterEmptyMiddle
+import com.hanix.waterwatch.designsystem.WaterEmptyTop
+import com.hanix.waterwatch.designsystem.WaterFullBottom
+import com.hanix.waterwatch.designsystem.WaterFullMiddle
+import com.hanix.waterwatch.designsystem.WaterFullTop
 import kotlin.math.roundToInt
 
-// 크기·시간은 디자인 프로토타입(390pt 폭 기준) 값 그대로. pt 는 dp 로 옮긴다. 색은 ui.theme 에 모아 뒀다.
+// 크기·시간은 디자인 프로토타입(390pt 폭 기준) 값 그대로. pt 는 dp 로 옮긴다.
 
 private val LIGHT_GRADIENT = Brush.verticalGradient(
     0f to BackgroundLightTop,
