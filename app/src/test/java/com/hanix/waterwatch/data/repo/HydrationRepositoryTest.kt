@@ -3,9 +3,13 @@ package com.hanix.waterwatch.data.repo
 import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -64,6 +68,20 @@ class HydrationRepositoryTest {
         repository.recordIntake(250.0)
 
         assertEquals(250.0, healthConnectDataSource.writtenMl)
+    }
+
+    @Test
+    fun `기록하면 폰 화면이 다시 읽도록 바뀌었다는 신호를 보낸다`() = runBlocking {
+        val repository = HydrationRepository(
+            healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
+            wearSyncDataSource = FakeWearSyncDataSource(),
+            goalDataSource = FakeGoalDataSource
+        )
+        val changed = async(start = CoroutineStart.UNDISPATCHED) { repository.intakeChanged.first() }
+
+        repository.recordIntake(250.0)
+
+        withTimeout(1_000) { changed.await() }
     }
 
     @Test

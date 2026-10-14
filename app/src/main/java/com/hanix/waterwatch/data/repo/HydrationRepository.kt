@@ -6,7 +6,11 @@ import com.google.android.gms.common.api.CommonStatusCodes
 import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 
 /** 섭취 기록은 Health Connect 를 단일 저장소로 쓰고, 조회 결과를 워치에 함께 반영한다. */
@@ -15,6 +19,17 @@ class HydrationRepository(
     private val wearSyncDataSource: WearSyncDataSource,
     private val goalDataSource: GoalDataSource
 ) {
+
+    /*
+     * 워치에서 온 기록은 서비스가 이 repository 로 쓰기 때문에, 폰 화면은 이 신호를 받아야 다시 읽을 수 있다.
+     * 값은 Health Connect 에만 두고 여기서는 바뀌었다는 사실만 알린다.
+     * 받는 쪽은 어차피 최신 값을 다시 읽으므로 밀린 신호는 하나만 남긴다.
+     */
+    private val _intakeChanged = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val intakeChanged: SharedFlow<Unit> = _intakeChanged.asSharedFlow()
 
     val goalMl: Flow<Int>
         get() = goalDataSource.goalMl
@@ -35,9 +50,13 @@ class HydrationRepository(
 
     suspend fun recordIntake(ml: Double) {
         healthConnectDataSource.writeHydrationMl(ml)
+        _intakeChanged.tryEmit(Unit)
     }
 
-    suspend fun undoLastIntake(): Boolean = healthConnectDataSource.deleteLatestTodayRecord()
+    suspend fun undoLastIntake(): Boolean =
+        healthConnectDataSource.deleteLatestTodayRecord().also { deleted ->
+            if (deleted) _intakeChanged.tryEmit(Unit)
+        }
 
     suspend fun isWatchConnected(): Boolean = wearSyncDataSource.isWatchConnected()
 

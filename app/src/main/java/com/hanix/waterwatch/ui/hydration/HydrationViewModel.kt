@@ -53,6 +53,11 @@ class HydrationViewModel(
 
     init {
         loadPermissionState()
+        // 폰에서 누른 기록·취소도, 워치에서 온 기록도 여기서 다시 읽는다.
+        // 조회 경로에 워치 발행이 물려 있어 워치까지 같이 갱신된다.
+        viewModelScope.launch {
+            hydrationRepository.intakeChanged.collect { loadToday() }
+        }
     }
 
     /** 권한 요청은 ActivityResultContract 라서 화면이 수행하고 결과만 넘겨준다. */
@@ -62,20 +67,17 @@ class HydrationViewModel(
         if (granted) viewModelScope.launch { loadToday() }
     }
 
-    /** 기록 후 총량을 다시 읽는다. 조회 경로에 워치 발행이 물려 있어 워치까지 같이 갱신된다. */
     fun recordIntake(ml: Double) {
         launchIntakeChange {
             runCatching { hydrationRepository.recordIntake(ml) }
                 .onSuccess {
                     Log.i(TAG, "기록 성공 ml=$ml")
                     showRecordedToast(ml)
-                    loadToday()
                 }
                 .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
         }
     }
 
-    /** 기록과 같은 이유로 취소 후에도 총량을 다시 읽어 워치까지 갱신한다. */
     fun undoLastIntake() {
         launchIntakeChange {
             runCatching { hydrationRepository.undoLastIntake() }
@@ -84,7 +86,6 @@ class HydrationViewModel(
                     if (deleted) {
                         // 방금 기록 토스트가 떠 있으면 취소한 기록을 가리키게 되므로 바로 내린다.
                         hideRecordedToast()
-                        loadToday()
                     }
                 }
                 .onFailure { Log.e(TAG, "기록 취소 실패", it) }
