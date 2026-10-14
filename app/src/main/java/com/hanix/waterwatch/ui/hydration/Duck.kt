@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
-import com.hanix.waterwatch.R
+import com.hanix.waterwatch.designsystem.R
 import kotlin.math.min
 
 // 값은 디자인 프로토타입(390pt 폭 기준)에서 옮겼다.

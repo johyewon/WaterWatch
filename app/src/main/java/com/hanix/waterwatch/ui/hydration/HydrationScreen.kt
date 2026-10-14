@@ -26,6 +26,8 @@ import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.locator.ServiceLocator
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
+import com.hanix.waterwatch.designsystem.HydrationBackground
+import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
 import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -97,7 +99,7 @@ fun HydrationScreen(
     val progress = goalMl?.let { (totalMl.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
 
     Box(modifier = modifier.fillMaxSize()) {
-        HydrationBackground(progress = progress, modifier = Modifier.fillMaxSize())
+        HydrationBackground(progress = progress, spec = HydrationBackgroundSpec.Phone, modifier = Modifier.fillMaxSize())
         Duck(progress = progress, modifier = Modifier.fillMaxSize())
 
         Column(

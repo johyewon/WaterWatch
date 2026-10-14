@@ -37,3 +37,4 @@ val ButtonContainer = Color.White
 val ButtonContent = Color(0xFF333D4B)
 val ButtonBorder = Color(0xFFCDE6FB)
 val ButtonIcon = Color(0xFF6B7684)
+val ButtonMoreIcon = Color(0xFF4E5968)
