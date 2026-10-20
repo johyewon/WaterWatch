@@ -7,4 +7,10 @@ object Radius {
 
     /** 토스트 같은 카드 */
     val Medium = 12.dp
+
+    /** 버튼 */
+    val Large = 16.dp
+
+    /** 바텀시트 위 모서리 */
+    val XLarge = 24.dp
 }

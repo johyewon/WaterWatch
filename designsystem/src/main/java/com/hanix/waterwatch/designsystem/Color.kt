@@ -39,6 +39,13 @@ val ButtonBorder = Color(0xFFCDE6FB)
 val ButtonIcon = Color(0xFF6B7684)
 val ButtonMoreIcon = Color(0xFF4E5968)
 
+/** 폰 바텀시트 */
+val BottomSheetBackground = Color.White
+val BottomSheetScrim = Color(0x660A1E46)
+val BottomSheetHandle = Color(0xFFD1D6DB)
+val BottomSheetTitle = Color(0xFF191F28)
+val BottomSheetSecondaryButton = Color(0xFFF2F4F6)
+
 /** 워치 더보기 시트 */
 val SheetBackground = Color(0xF508122C)
 val SheetButton = Color.White.copy(alpha = 0.14f)
