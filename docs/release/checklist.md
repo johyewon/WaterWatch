@@ -6,7 +6,7 @@ Google Play 첫 출시까지 해야 할 일을 모은다. 항목별 상세 내�
 - [면책 고지](disclaimer.md)
 - [Play Console 선언 답변 초안](play-declarations.md)
 - [스토어 등록정보](store-listing.md)
-- 앱 이름: 마지막에 정한다
+- 앱 이름: 꽥
 
 ## 0. 계정
 
@@ -24,7 +24,8 @@ Google Play 첫 출시까지 해야 할 일을 모은다. 항목별 상세 내�
   - 폰과 워치가 같은 applicationId 를 쓰기 때문에 같은 번호를 올릴 수 없다. 지금은 둘 다 `1`이다.
 - [ ] applicationId `com.hanix.waterwatch` 확정
   - 첫 업로드 후에는 바꿀 수 없다. 앱 이름이 바뀌어도 패키지명은 그대로 남는다.
-- [ ] 앱 이름 확정 후 `app`, `wear` 두 모듈의 `app_name` 반영
+- [ ] `app`, `wear` 두 모듈의 `app_name` 을 "꽥"으로 변경
+- [ ] 디자인 시안의 "오늘의 물" 문구(권한 안내 화면 등)를 "꽥"으로 바꿔서 구현
 - [ ] `PermissionsRationaleActivity` 에 개인정보처리방침 본문 표시
   - Health Connect 권한 화면의 방침 링크가 이 화면으로 온다. 스토어에 등록한 방침과 내용이 같아야 한다.
   - 앱에 INTERNET 권한이 없으므로 WebView 로 URL 을 띄우지 말고 본문을 텍스트로 넣는다.
@@ -67,7 +68,7 @@ Google Play 첫 출시까지 해야 할 일을 모은다. 항목별 상세 내�
 
 문구와 에셋 규격은 [store-listing.md](store-listing.md) 에 있다.
 
-- [ ] 앱 이름 (30자 이내)
+- [ ] 스토어 제목 확정 (30자 이내). 앱 이름은 "꽥"
 - [ ] 짧은 설명 (80자 이내), 자세한 설명 (4,000자 이내)
 - [ ] 앱 아이콘 512×512
 - [ ] 그래픽 이미지 1024×500
