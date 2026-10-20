@@ -38,3 +38,11 @@ val ButtonContent = Color(0xFF333D4B)
 val ButtonBorder = Color(0xFFCDE6FB)
 val ButtonIcon = Color(0xFF6B7684)
 val ButtonMoreIcon = Color(0xFF4E5968)
+
+/** 워치 더보기 시트 */
+val SheetBackground = Color(0xF508122C)
+val SheetButton = Color.White.copy(alpha = 0.14f)
+val SheetContent = Color.White
+val SheetSubtleContent = Color(0xFFB8C7E6)
+val SheetPrimaryContainer = Color.White
+val SheetPrimaryContent = Color(0xFF16348A)

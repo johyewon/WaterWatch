@@ -4,19 +4,21 @@ import android.util.Log
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import com.hanix.waterwatch.common.PATH_LOG_HYDRATION
+import com.hanix.waterwatch.common.PATH_UNDO_HYDRATION
 import com.hanix.waterwatch.locator.ServiceLocator
 import kotlinx.coroutines.runBlocking
 
-/** 워치가 보낸 기록 요청을 Health Connect 에 쓰고, 갱신된 총량을 다시 워치로 내려보낸다. */
+/** 워치가 보낸 기록·취소 요청을 Health Connect 에 반영하고, 갱신된 총량을 다시 워치로 내려보낸다. */
 class HydrationRecordListenerService : WearableListenerService() {
 
     private val hydrationRepository get() = ServiceLocator.hydrationRepository
 
+    // 콜백은 이미 백그라운드 스레드이고, 반환하면 서비스가 종료될 수 있어 여기서 끝까지 처리한다.
     override fun onMessageReceived(event: MessageEvent) {
-        if (event.path != PATH_LOG_HYDRATION) return
-
-        // 콜백은 이미 백그라운드 스레드이고, 반환하면 서비스가 종료될 수 있어 여기서 끝까지 처리한다.
-        runBlocking { record(event) }
+        when (event.path) {
+            PATH_LOG_HYDRATION -> runBlocking { record(event) }
+            PATH_UNDO_HYDRATION -> runBlocking { undo() }
+        }
     }
 
     private suspend fun record(event: MessageEvent) {
@@ -41,7 +43,25 @@ class HydrationRecordListenerService : WearableListenerService() {
         sendResult(event, recorded.isSuccess)
         if (recorded.isFailure) return
 
-        // 백그라운드 읽기 권한이 없으면 여기서 실패한다. 기록 자체는 유효하므로 로그만 남긴다.
+        publishTodayToWear()
+    }
+
+    // ponytail: 취소는 결과를 회신하지 않는다. 워치는 총량이 줄어드는 것으로 확인한다. 실패 안내가 필요해지면 회신 경로 추가.
+    private suspend fun undo() {
+        if (hydrationRepository.isHealthConnectAvailable.not()) {
+            Log.w(TAG, "Health Connect 사용 불가 — 취소 건너뜀")
+            return
+        }
+
+        val deleted = runCatching { hydrationRepository.undoLastIntake() }
+            .onSuccess { Log.i(TAG, "취소 deleted=$it") }
+            .onFailure { Log.e(TAG, "취소 실패", it) }
+            .getOrDefault(false)
+        if (deleted) publishTodayToWear()
+    }
+
+    // 백그라운드 읽기 권한이 없으면 여기서 실패한다. 기록·취소 자체는 유효하므로 로그만 남긴다.
+    private suspend fun publishTodayToWear() {
         runCatching { hydrationRepository.todayTotalMl() }
             .onSuccess { Log.i(TAG, "총량 갱신 — $it") }
             .onFailure { Log.e(TAG, "총량 재조회 실패 — 워치 값이 낡을 수 있음", it) }

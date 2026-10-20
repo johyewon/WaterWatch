@@ -23,9 +23,9 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.hanix.waterwatch.R
 import com.hanix.waterwatch.designsystem.Accent
 import com.hanix.waterwatch.designsystem.Ink
+import com.hanix.waterwatch.designsystem.R
 import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.designsystem.ToastBackground
 import com.hanix.waterwatch.designsystem.ToastTextStyle

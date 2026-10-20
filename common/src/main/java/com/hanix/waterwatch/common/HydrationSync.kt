@@ -4,7 +4,8 @@ package com.hanix.waterwatch.common
  * 폰과 워치가 같은 문자열을 봐야 통신이 성립한다.
  * 한쪽만 바뀌면 예외도 없이 값이 오지 않기 때문에 두 모듈이 이 파일만 참조한다.
  *
- * 주의: PATH_LOG_HYDRATION 은 app 매니페스트의 service intent-filter 에도 복제돼 있다.
+ * 주의: PATH_LOG_HYDRATION 은 app 매니페스트의 service intent-filter pathPrefix 에도 복제돼 있다.
+ * 워치가 보내는 경로는 모두 이 값으로 시작해야 폰 서비스가 받는다.
  * 매니페스트는 Kotlin 상수를 참조할 수 없어 HydrationLogPathTest 로 두 값의 일치를 검증한다.
  */
 
@@ -27,6 +28,9 @@ const val KEY_EPOCH_DAY = "epoch_day"
 
 /** 워치가 전송, 폰이 수신. payload 는 ml 정수의 문자열. */
 const val PATH_LOG_HYDRATION = "/hydration/log"
+
+/** 워치가 전송, 폰이 수신. 오늘 마지막 기록을 지운다. payload 없음. */
+const val PATH_UNDO_HYDRATION = "$PATH_LOG_HYDRATION/undo"
 
 /**
  * 폰이 전송, 워치가 수신. [PATH_LOG_HYDRATION] 처리 결과.

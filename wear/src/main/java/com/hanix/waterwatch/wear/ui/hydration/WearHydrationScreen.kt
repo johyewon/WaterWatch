@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -48,6 +51,9 @@ private val QUICK_SERVINGS_ML = listOf(120, 250)
 private val HEADER_PADDING_TOP = 17.dp
 private val HEADER_PADDING_HORIZONTAL = 20.dp
 
+// 헤더 위에 겹쳐 뜬다.
+private val TOAST_PADDING_TOP = 32.dp
+
 private val BUTTONS_PADDING_BOTTOM = 36.dp
 private val BUTTON_SPACING = 3.dp
 // 보드에서는 세 칸 너비와 높이가 같아서 원이 된다. 큰 워치에서도 원을 유지하도록 크기를 고정한다.
@@ -66,12 +72,15 @@ fun WearHydrationRoute(isAmbient: Boolean, modifier: Modifier = Modifier) {
     val todayIntake by viewModel.todayIntake.collectAsStateWithLifecycle()
     val sendResult by viewModel.sendResult.collectAsStateWithLifecycle()
     val recordAccepted by viewModel.recordAccepted.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
 
     WearHydrationScreen(
         todayIntake = todayIntake,
         sendFailed = sendResult?.isFailure == true,
         recordFailed = recordAccepted == false,
+        toastMessage = toastMessage,
         onRecordClick = viewModel::recordIntake,
+        onUndoClick = viewModel::undoLastIntake,
         isAmbient = isAmbient,
         modifier = modifier
     )
@@ -86,11 +95,14 @@ fun WearHydrationScreen(
     todayIntake: TodayIntake?,
     sendFailed: Boolean = false,
     recordFailed: Boolean = false,
+    toastMessage: String? = null,
     onRecordClick: (ml: Int) -> Unit = {},
+    onUndoClick: () -> Unit = {},
     isAmbient: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val progress = progressOf(todayIntake)
+    var showMore by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         // ponytail: 저전력 화면은 디자인이 나오면 따로 만든다. 지금은 애니메이션만 멈춘다.
@@ -136,10 +148,26 @@ fun WearHydrationScreen(
             QUICK_SERVINGS_ML.forEach { ml ->
                 QuickServingButton(ml = ml, onClick = { onRecordClick(ml) })
             }
-            // ponytail: 모양만 둠. 직접 입력·이전 기록 취소 메뉴는 4단계에서 연결한다.
-            MoreButton(onClick = {})
+            MoreButton(onClick = { showMore = true })
+        }
+
+        if (toastMessage != null) {
+            WearToast(
+                message = toastMessage,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = TOAST_PADDING_TOP)
+            )
         }
     }
+
+    MoreDialog(
+        visible = showMore,
+        canUndo = (todayIntake?.totalMl ?: 0) > 0,
+        onRecord = onRecordClick,
+        onUndo = onUndoClick,
+        onDismiss = { showMore = false }
+    )
 }
 
 @Composable

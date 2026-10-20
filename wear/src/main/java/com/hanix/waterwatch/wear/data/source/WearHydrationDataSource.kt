@@ -17,6 +17,7 @@ import com.hanix.waterwatch.common.LOG_RESULT_OK
 import com.hanix.waterwatch.common.PATH_LOG_HYDRATION
 import com.hanix.waterwatch.common.PATH_LOG_RESULT
 import com.hanix.waterwatch.common.PATH_TODAY_INTAKE
+import com.hanix.waterwatch.common.PATH_UNDO_HYDRATION
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -33,6 +34,9 @@ interface WearHydrationDataSource {
     fun recordResults(): Flow<Boolean>
 
     suspend fun requestRecord(ml: Int)
+
+    /** 오늘 마지막 기록 취소를 요청한다. */
+    suspend fun requestUndo()
 }
 
 internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationDataSource {
@@ -78,11 +82,19 @@ internal class WearHydrationDataSourceImpl(context: Context) : WearHydrationData
      * ponytail: 페어링 대상이 폰 하나라 연결된 노드 전체에 보낸다. 기기가 늘면 CapabilityClient 로 대상 지정.
      */
     override suspend fun requestRecord(ml: Int) {
+        sendToPhone(PATH_LOG_HYDRATION, ml.toString().toByteArray())
+    }
+
+    override suspend fun requestUndo() {
+        sendToPhone(PATH_UNDO_HYDRATION, ByteArray(0))
+    }
+
+    private suspend fun sendToPhone(path: String, payload: ByteArray) {
         val nodes = nodeClient.connectedNodes.await()
         check(nodes.isNotEmpty()) { "연결된 기기가 없음" }
 
         nodes.forEach {
-            messageClient.sendMessage(it.id, PATH_LOG_HYDRATION, ml.toString().toByteArray()).await()
+            messageClient.sendMessage(it.id, path, payload).await()
         }
     }
 
