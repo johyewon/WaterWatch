@@ -34,8 +34,7 @@ Google Play 첫 출시까지 해야 할 일을 모은다. 항목별 상세 내�
   - 지금은 "사용할 수 없음" 문구만 보여준다. 심사 기기에서 막히지 않도록 처리하는 편이 안전하다.
 - [ ] 스크린샷용 UI 정리. 지금 화면은 골격 단계라 "Health Connect" 제목과 예외 이름이 그대로 보인다.
 - [ ] 디자인 기능 구현. 스토어 문구가 디자인 기준이라 실제 앱과 맞아야 한다. 구현 상태 표는 [store-listing.md](store-listing.md#디자인-기능과-구현-상태)에 있다.
-- [ ] 알림을 넣으면 `POST_NOTIFICATIONS` 권한 요청 (Android 13+). 리마인더는 정확한 알람(`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`) 없이 WorkManager 같은 방식으로 예약한다. 정확한 알람 권한은 Play 심사 대상이다.
-- [ ] Health Connect 를 디자인대로 선택 기능으로 바꾸면 앱 자체 저장소가 필요하다. 이 경우 개인정보처리방침과 데이터 보안 답변도 고친다.
+- [ ] 권한 안내 화면은 디자인과 다르게 구현한다: 알림 항목은 빼고, Health Connect 는 선택이 아니라 필수로 안내한다.
 - [ ] 업로드 키 keystore 생성, 안전한 곳에 백업. Play App Signing 사용
 - [ ] release AAB 빌드 확인 (`app`, `wear` 각각)
 - [ ] (선택) R8 활성화. 지금은 `isMinifyEnabled = false`
