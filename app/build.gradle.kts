@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // Navigation 의 type-safe 경로가 @Serializable 을 쓴다.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -60,6 +62,7 @@ dependencies {
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.navigation.compose)
 
 
     testImplementation(libs.junit)

@@ -27,6 +27,15 @@ val WaterFullBottom = Color(0xFF122C7A)
 /** 기본 글자색 */
 val Ink = Color(0xFF0A2540)
 
+/** 글자. 제목 → 본문 → 설명 → 보조 설명 순으로 옅어진다. */
+val TitleText = Color(0xFF191F28)
+val BodyText = Color(0xFF333D4B)
+val DescriptionText = Color(0xFF4E5968)
+val CaptionText = Color(0xFF6B7684)
+
+/** 흰 바탕 위의 회색 면. 보조 버튼, 안내 상자 */
+val SubtleSurface = Color(0xFFF2F4F6)
+
 /** 강조색. 체크 표시 등 */
 val Accent = Color(0xFF2149A6)
 
@@ -46,8 +55,6 @@ val UndoContent = Color(0xFF1B3550)
 val BottomSheetBackground = Color.White
 val BottomSheetScrim = Color(0x660A1E46)
 val BottomSheetHandle = Color(0xFFD1D6DB)
-val BottomSheetTitle = Color(0xFF191F28)
-val BottomSheetSecondaryButton = Color(0xFFF2F4F6)
 
 /** 워치 더보기 시트 */
 val SheetBackground = Color(0xF508122C)

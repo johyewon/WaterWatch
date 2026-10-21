@@ -40,7 +40,7 @@ class HydrationRepository(
     /** 앱 동작에 필요한 최소 권한. 이게 false 면 조회도 기록도 못 한다. */
     suspend fun hasPermissions(): Boolean = healthConnectDataSource.hasHydrationPermissions()
 
-    /** 백그라운드 읽기까지 포함. 최소 권한만 있는 상태를 구분해 권한 요청을 다시 띄우는 데 쓴다. */
+    /** 백그라운드 읽기까지 포함. 온보딩에서 백그라운드 읽기만 빠졌는지 구분하는 데 쓴다. */
     suspend fun hasAllRequestedPermissions(): Boolean =
         healthConnectDataSource.hasAllRequestedPermissions()
 

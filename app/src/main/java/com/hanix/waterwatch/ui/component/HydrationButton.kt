@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hanix.waterwatch.designsystem.Accent
-import com.hanix.waterwatch.designsystem.BottomSheetSecondaryButton
+import com.hanix.waterwatch.designsystem.SubtleSurface
 import com.hanix.waterwatch.designsystem.ButtonBorder
 import com.hanix.waterwatch.designsystem.ButtonContainer
 import com.hanix.waterwatch.designsystem.ButtonContent
@@ -54,7 +54,7 @@ enum class HydrationButtonStyle(
     Outlined(52.dp, ButtonContainer, ButtonContent, BorderStroke(1.dp, ButtonBorder), FontWeight.Bold),
 
     /** 바텀시트 취소 */
-    Secondary(56.dp, BottomSheetSecondaryButton, ButtonContent, null, FontWeight.SemiBold),
+    Secondary(56.dp, SubtleSurface, ButtonContent, null, FontWeight.SemiBold),
 
     /** 바텀시트 저장·기록 */
     Primary(56.dp, Accent, Color.White, null, FontWeight.SemiBold)

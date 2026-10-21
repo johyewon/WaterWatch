@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.hanix.waterwatch.designsystem.BottomSheetBackground
 import com.hanix.waterwatch.designsystem.BottomSheetHandle
 import com.hanix.waterwatch.designsystem.BottomSheetScrim
-import com.hanix.waterwatch.designsystem.BottomSheetTitle
+import com.hanix.waterwatch.designsystem.TitleText
 import com.hanix.waterwatch.designsystem.Radius
 import com.hanix.waterwatch.designsystem.Spacing
 import kotlinx.coroutines.launch
@@ -80,7 +80,7 @@ fun HydrationBottomSheet(
             Text(
                 text = title,
                 modifier = Modifier.fillMaxWidth(),
-                color = BottomSheetTitle,
+                color = TitleText,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center

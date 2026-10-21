@@ -129,12 +129,8 @@ class HydrationViewModel(
 
             val granted = checkGranted("필수") { hydrationRepository.hasPermissions() }
             _granted.value = granted
-            if (granted) loadToday()
-
-            // 필수 권한만 허용된 상태에서도 요청해야 백그라운드 읽기가 허용될 기회가 생긴다.
-            if (checkGranted("전체") { hydrationRepository.hasAllRequestedPermissions() }.not()) {
-                _requestPermissions.send(Unit)
-            }
+            // 백그라운드 읽기는 온보딩에서 한 번만 묻는다. 거부한 사람에게 켤 때마다 다시 묻지 않는다.
+            if (granted) loadToday() else _requestPermissions.send(Unit)
         }
     }
 

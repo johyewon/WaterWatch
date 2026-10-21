@@ -7,6 +7,8 @@ import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.GoalDataSourceImpl
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSourceImpl
+import com.hanix.waterwatch.data.source.OnboardingDataSource
+import com.hanix.waterwatch.data.source.OnboardingDataSourceImpl
 import com.hanix.waterwatch.data.source.WearSyncDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSourceImpl
 
@@ -52,6 +54,10 @@ internal object ServiceLocator {
             wearSyncDataSource = wearSyncDataSource,
             goalDataSource = goalDataSource,
         )
+    }
+
+    val onboardingDataSource: OnboardingDataSource by lazy {
+        OnboardingDataSourceImpl(context)
     }
     // End Singleton Provider
 }

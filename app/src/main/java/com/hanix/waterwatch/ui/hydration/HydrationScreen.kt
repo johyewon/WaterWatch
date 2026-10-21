@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -125,6 +126,7 @@ fun HydrationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .safeDrawingPadding()
                 .padding(Spacing.XLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
@@ -200,6 +202,7 @@ fun HydrationScreen(
                 ml = recordedToastMl,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .safeDrawingPadding()
                     .padding(start = Spacing.Large, end = Spacing.Large, bottom = TOAST_BOTTOM_MARGIN)
             )
         }
