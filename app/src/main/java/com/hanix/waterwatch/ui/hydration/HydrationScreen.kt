@@ -1,6 +1,7 @@
 package com.hanix.waterwatch.ui.hydration
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,8 +9,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,14 +22,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.PermissionController
+import com.hanix.waterwatch.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
+import com.hanix.waterwatch.designsystem.ButtonBorder
+import com.hanix.waterwatch.designsystem.ButtonContainer
+import com.hanix.waterwatch.designsystem.ButtonContent
 import com.hanix.waterwatch.designsystem.Spacing
+import com.hanix.waterwatch.designsystem.UndoContent
 import com.hanix.waterwatch.locator.ServiceLocator
+import com.hanix.waterwatch.ui.component.HydrationButton
+import com.hanix.waterwatch.ui.component.HydrationButtonStyle
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 import com.hanix.waterwatch.designsystem.HydrationBackground
 import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
@@ -37,6 +54,9 @@ import java.util.Locale
 private val QUICK_SERVINGS_ML = listOf(120.0, 250.0)
 
 private val DATE_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
+
+private val SETTINGS_BUTTON_SIZE = 44.dp
+private val SETTINGS_ICON_SIZE = 22.dp
 
 /** 기록 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
 private val TOAST_BOTTOM_MARGIN = 150.dp
@@ -109,8 +129,22 @@ fun HydrationScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
-            TextButton(onClick = onSettingsClick, modifier = Modifier.align(Alignment.End)) {
-                Text(text = "설정")
+            OutlinedIconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .size(SETTINGS_BUTTON_SIZE),
+                colors = IconButtonDefaults.outlinedIconButtonColors(
+                    containerColor = ButtonContainer,
+                    contentColor = ButtonContent
+                ),
+                border = BorderStroke(1.dp, ButtonBorder)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = "설정: 하루 목표 바꾸기",
+                    modifier = Modifier.size(SETTINGS_ICON_SIZE)
+                )
             }
 
             Text(text = today.format(DATE_FORMATTER), style = MaterialTheme.typography.titleMedium)
@@ -129,27 +163,35 @@ fun HydrationScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             val recordEnabled = granted == true
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                 QUICK_SERVINGS_ML.forEach { ml ->
-                    Button(
+                    HydrationButton(
+                        text = "${ml.toInt()}ml",
                         onClick = { onRecordClick(ml) },
+                        style = HydrationButtonStyle.Outlined,
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { contentDescription = "${ml.toInt()}ml 마셨어요" },
                         enabled = recordEnabled,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(text = "+${ml.toInt()}ml")
-                    }
+                        icon = painterResource(R.drawable.ic_plus)
+                    )
                 }
-                Button(
+                HydrationButton(
+                    text = "직접입력",
                     onClick = onCustomInputClick,
-                    enabled = recordEnabled,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = "직접입력")
-                }
+                    style = HydrationButtonStyle.Outlined,
+                    modifier = Modifier.weight(1f),
+                    enabled = recordEnabled
+                )
             }
 
-            TextButton(onClick = onUndoClick, enabled = recordEnabled) {
-                Text(text = "이전 기록 취소하기")
+            // ponytail: 글자색 고정. 물이 차올라 배경이 어두워지면 프로토타입은 흰색으로 바꾼다.
+            TextButton(
+                onClick = onUndoClick,
+                enabled = recordEnabled,
+                colors = ButtonDefaults.textButtonColors(contentColor = UndoContent)
+            ) {
+                Text(text = "이전 기록 취소하기", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 

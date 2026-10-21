@@ -39,6 +39,9 @@ val ButtonBorder = Color(0xFFCDE6FB)
 val ButtonIcon = Color(0xFF6B7684)
 val ButtonMoreIcon = Color(0xFF4E5968)
 
+/** 폰 이전 기록 취소 */
+val UndoContent = Color(0xFF1B3550)
+
 /** 폰 바텀시트 */
 val BottomSheetBackground = Color.White
 val BottomSheetScrim = Color(0x660A1E46)
