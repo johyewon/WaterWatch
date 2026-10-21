@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Typography
+import com.hanix.waterwatch.designsystem.Pretendard
 
 class WearHydrationActivity : ComponentActivity() {
 
@@ -35,7 +37,7 @@ class WearHydrationActivity : ComponentActivity() {
 
     @Composable
     fun ScreenContents() {
-        MaterialTheme {
+        MaterialTheme(typography = Typography(defaultFontFamily = Pretendard)) {
             WearHydrationRoute(isAmbient = isAmbient)
         }
     }
