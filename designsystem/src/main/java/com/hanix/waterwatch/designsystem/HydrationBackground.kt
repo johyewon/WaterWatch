@@ -1,8 +1,8 @@
 package com.hanix.waterwatch.designsystem
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Ease
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawBehind
@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -58,10 +59,15 @@ private const val WATER_COLOR_MILLIS = 1_200
 private const val GRAIN_DRIFT_MILLIS = 30_000
 private const val GRAIN_ALPHA = 0.6f
 
+/** 폰 프로토타입은 진행률이 이만큼부터 아래쪽 글자 뒤가 물로 덮인다고 본다. */
+private const val FOOTER_WATER_PROGRESS = 0.08f
+
 /** 폰·워치 프로토타입 보드마다 다른 배경 값 */
 class HydrationBackgroundSpec(
     /** 물은 화면을 다 채우지 않고 이만큼에서 멈춘다. */
     val maxWaterLevel: Float,
+    /** 물이 이 높이(아래에서부터 화면 비율)를 넘으면 위쪽 글자 뒤가 물로 덮인다. */
+    val headerWaterLevel: Float,
     val deepenMillis: Int,
     /** 짙은 배경의 투명도는 진행률의 이 거듭제곱이다. */
     val deepExponent: Float,
@@ -83,6 +89,7 @@ class HydrationBackgroundSpec(
         /** 390pt 폭 보드. pt 를 dp 로 그대로 옮겼다. */
         val Phone = HydrationBackgroundSpec(
             maxWaterLevel = 0.97f,
+            headerWaterLevel = 0.72f,
             deepenMillis = 1_400,
             deepExponent = 1f,
             waterEdgeBlur = 51.dp,
@@ -94,6 +101,7 @@ class HydrationBackgroundSpec(
         /** 갤럭시 워치 384px 보드. 2배 해상도로 보고 절반을 dp 로 옮겼다. */
         val Watch = HydrationBackgroundSpec(
             maxWaterLevel = 0.8f,
+            headerWaterLevel = 0.62f,
             deepenMillis = 1_200,
             deepExponent = 0.8f,
             waterEdgeBlur = 25.dp,
@@ -190,6 +198,33 @@ private fun Grain(tileSize: Dp, drift: DpOffset, animated: Boolean, modifier: Mo
             }
         }
     )
+}
+
+/**
+ * 진행률이 [progress] 일 때 화면 위쪽 글자 뒤의 배경색. 글자색을 고르는 데 쓴다.
+ * 물이 [HydrationBackgroundSpec.headerWaterLevel] 을 넘으면 물 윗면 색, 아니면 배경 위쪽 색이다. 프로토타입 계산 그대로.
+ */
+fun HydrationBackgroundSpec.headerBackgroundColor(progress: Float): Color =
+    if (progress * maxWaterLevel > headerWaterLevel) {
+        mixSrgb(WaterEmptyTop, WaterFullTop, progress)
+    } else {
+        mixSrgb(BackgroundLightTop, BackgroundDeepTop, progress.pow(deepExponent))
+    }
+
+/** 폰 화면 아래쪽 글자 뒤의 배경색. 프로토타입 계산 그대로. */
+fun footerBackgroundColor(progress: Float): Color =
+    if (progress >= FOOTER_WATER_PROGRESS) {
+        mixSrgb(WaterEmptyBottom, WaterFullBottom, progress)
+    } else {
+        mixSrgb(BackgroundLightBottom, BackgroundDeepBottom, progress)
+    }
+
+/** [background] 위에서 [darkText] 보다 흰 글자의 대비가 같거나 크면 흰색을 준다. 프로토타입 inkFor 와 같은 WCAG 대비 비교다. */
+fun readableTextColor(background: Color, darkText: Color): Color {
+    val backgroundLuminance = background.luminance()
+    val whiteContrast = 1.05f / (backgroundLuminance + 0.05f)
+    val darkContrast = (backgroundLuminance + 0.05f) / (darkText.luminance() + 0.05f)
+    return if (whiteContrast >= darkContrast) Color.White else darkText
 }
 
 /** Compose 의 Color lerp 는 Oklab 에서 섞어서, 프로토타입처럼 sRGB 채널을 그대로 섞는다. */

@@ -1,20 +1,27 @@
 package com.hanix.waterwatch.ui.hydration
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,41 +30,60 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.PermissionController
-import com.hanix.waterwatch.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hanix.waterwatch.R
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.designsystem.ButtonBorder
 import com.hanix.waterwatch.designsystem.ButtonContainer
 import com.hanix.waterwatch.designsystem.ButtonContent
+import com.hanix.waterwatch.designsystem.HeaderText
+import com.hanix.waterwatch.designsystem.HydrationBackground
+import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
+import com.hanix.waterwatch.designsystem.Ink
 import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.designsystem.UndoContent
+import com.hanix.waterwatch.designsystem.footerBackgroundColor
+import com.hanix.waterwatch.designsystem.headerBackgroundColor
+import com.hanix.waterwatch.designsystem.readableTextColor
 import com.hanix.waterwatch.locator.ServiceLocator
 import com.hanix.waterwatch.ui.component.HydrationButton
 import com.hanix.waterwatch.ui.component.HydrationButtonStyle
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
-import com.hanix.waterwatch.designsystem.HydrationBackground
-import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
-import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /** 한 번 눌러서 바로 기록하는 용량(ml) */
 private val QUICK_SERVINGS_ML = listOf(120.0, 250.0)
 
 private val DATE_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
 
+/*
+ * 위쪽 위치는 커스텀 디자인 보드(높이 844)에서 화면 맨 위부터 잰 값을 화면 높이 비율로 옮긴다.
+ * 고정값으로 두면 화면이 긴 기기에서 위에 붙어 보인다.
+ */
+private const val HEADER_TOP_RATIO = 76f / 844f
+/** 브라우저 기본 줄 높이(normal)에 가깝게 맞춘다. */
+private val HEADER_LINE_HEIGHT = 1.2.em
+
+private const val SETTINGS_TOP_RATIO = 52f / 844f
+private val SETTINGS_PADDING_END = 16.dp
 private val SETTINGS_BUTTON_SIZE = 44.dp
 private val SETTINGS_ICON_SIZE = 22.dp
+
+private val TEXT_COLOR_TWEEN = tween<Color>(durationMillis = 600)
 
 /** 기록 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
 private val TOAST_BOTTOM_MARGIN = 150.dp
@@ -98,6 +124,7 @@ fun HydrationRoute(
         onUndoClick = viewModel::undoLastIntake,
         modifier = modifier
     )
+
 }
 
 @Composable
@@ -118,49 +145,33 @@ fun HydrationScreen(
     val totalMl = total?.getOrNull()?.roundToInt() ?: 0
 
     val progress = goalMl?.let { (totalMl.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
+    val textColors = rememberTextColors(progress)
 
-    Box(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val headerTop = maxHeight * HEADER_TOP_RATIO
+        val settingsTop = maxHeight * SETTINGS_TOP_RATIO
+
         HydrationBackground(progress = progress, spec = HydrationBackgroundSpec.Phone, modifier = Modifier.fillMaxSize())
         Duck(progress = progress, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
-                .padding(Spacing.XLarge),
+                // 위쪽은 상태 바 높이와 상관없이 화면 높이에 대한 비율로 정한다.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
+                .padding(start = Spacing.XLarge, end = Spacing.XLarge, bottom = Spacing.XLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
-            OutlinedIconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .size(SETTINGS_BUTTON_SIZE),
-                colors = IconButtonDefaults.outlinedIconButtonColors(
-                    containerColor = ButtonContainer,
-                    contentColor = ButtonContent
-                ),
-                border = BorderStroke(1.dp, ButtonBorder)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_settings),
-                    contentDescription = "설정: 하루 목표 바꾸기",
-                    modifier = Modifier.size(SETTINGS_ICON_SIZE)
-                )
-            }
-
-            Text(text = today.format(DATE_FORMATTER), style = MaterialTheme.typography.titleMedium)
-            Text(text = "%,d ml".format(totalMl), style = MaterialTheme.typography.displayLarge)
-
-            val failure = total?.exceptionOrNull()
-            when {
-                failure != null -> Text(text = "조회 실패 — ${failure.javaClass.simpleName}")
-                goalMl != null -> Text(text = remainingLabel(totalMl, goalMl))
-            }
-
-            if (healthConnectAvailable.not()) {
-                Text(text = "이 기기에서 Health Connect 를 사용할 수 없음")
-            }
+            Header(
+                today = today,
+                totalMl = totalMl,
+                status = total?.exceptionOrNull()?.let { "조회 실패 — ${it.javaClass.simpleName}" }
+                    ?: goalMl?.let { remainingLabel(totalMl, it) },
+                healthConnectAvailable = healthConnectAvailable,
+                textColors = textColors,
+                modifier = Modifier.padding(top = headerTop)
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -187,14 +198,33 @@ fun HydrationScreen(
                 )
             }
 
-            // ponytail: 글자색 고정. 물이 차올라 배경이 어두워지면 프로토타입은 흰색으로 바꾼다.
             TextButton(
                 onClick = onUndoClick,
                 enabled = recordEnabled,
-                colors = ButtonDefaults.textButtonColors(contentColor = UndoContent)
+                colors = ButtonDefaults.textButtonColors(contentColor = textColors.undo)
             ) {
                 Text(text = "이전 기록 취소하기", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
+        }
+
+        OutlinedIconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End))
+                .padding(top = settingsTop, end = SETTINGS_PADDING_END)
+                .size(SETTINGS_BUTTON_SIZE),
+            colors = IconButtonDefaults.outlinedIconButtonColors(
+                containerColor = ButtonContainer,
+                contentColor = ButtonContent
+            ),
+            border = BorderStroke(1.dp, ButtonBorder)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_settings),
+                contentDescription = "설정: 하루 목표 바꾸기",
+                modifier = Modifier.size(SETTINGS_ICON_SIZE)
+            )
         }
 
         if (recordedToastMl != null) {
@@ -207,6 +237,77 @@ fun HydrationScreen(
             )
         }
     }
+}
+
+/** 날짜, 오늘 마신 양, 남은 양. 크기·굵기는 디자인 프로토타입 값 그대로. */
+@Composable
+private fun Header(
+    today: LocalDate,
+    totalMl: Int,
+    status: String?,
+    healthConnectAvailable: Boolean,
+    textColors: TextColors,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+    ) {
+        Text(
+            text = today.format(DATE_FORMATTER),
+            color = textColors.header,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = HEADER_LINE_HEIGHT
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "%,d".format(totalMl),
+                modifier = Modifier.alignByBaseline(),
+                color = textColors.amount,
+                fontSize = 64.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = (-2).sp,
+                lineHeight = 1.05.em,
+                // 숫자가 바뀌어도 폭이 흔들리지 않게 고정폭 숫자를 쓴다.
+                style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum")
+            )
+            Text(
+                text = "ml",
+                modifier = Modifier.alignByBaseline(),
+                color = textColors.amount,
+                fontSize = 26.sp,
+                lineHeight = HEADER_LINE_HEIGHT
+            )
+        }
+        status?.let { StatusText(it, textColors.header) }
+        if (healthConnectAvailable.not()) {
+            StatusText("이 기기에서 Health Connect 를 사용할 수 없음", textColors.header)
+        }
+    }
+}
+
+@Composable
+private fun StatusText(text: String, color: Color) {
+    Text(text = text, color = color, fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = HEADER_LINE_HEIGHT)
+}
+
+/** 물 위에 놓인 글자색. 배경이 어두워지면 흰색으로 바뀐다. */
+private class TextColors(val header: Color, val amount: Color, val undo: Color)
+
+/** 진행률이 바뀌면 프로토타입처럼 0.6초 동안 글자색을 바꾼다. */
+@Composable
+private fun rememberTextColors(progress: Float): TextColors {
+    val headerOnDark = readableTextColor(HydrationBackgroundSpec.Phone.headerBackgroundColor(progress), Ink) == Color.White
+    val header by animateColorAsState(if (headerOnDark) Color.White else HeaderText, TEXT_COLOR_TWEEN, label = "header")
+    val amount by animateColorAsState(if (headerOnDark) Color.White else Ink, TEXT_COLOR_TWEEN, label = "amount")
+    val undo by animateColorAsState(
+        readableTextColor(footerBackgroundColor(progress), UndoContent),
+        TEXT_COLOR_TWEEN,
+        label = "undo"
+    )
+    return TextColors(header = header, amount = amount, undo = undo)
 }
 
 private fun remainingLabel(totalMl: Int, goalMl: Int): String =

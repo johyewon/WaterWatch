@@ -48,7 +48,10 @@ val ButtonBorder = Color(0xFFCDE6FB)
 val ButtonIcon = Color(0xFF6B7684)
 val ButtonMoreIcon = Color(0xFF4E5968)
 
-/** 폰 이전 기록 취소 */
+/** 폰 메인 위쪽(날짜·남은 양) 글자. 숫자는 [Ink]. 배경이 어두워지면 흰색으로 바뀐다. */
+val HeaderText = Color(0xFF24425E)
+
+/** 폰 이전 기록 취소. 배경이 어두워지면 흰색으로 바뀐다. */
 val UndoContent = Color(0xFF1B3550)
 
 /** 폰 바텀시트 */
