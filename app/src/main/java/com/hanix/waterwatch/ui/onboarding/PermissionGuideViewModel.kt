@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanix.waterwatch.data.repo.HydrationRepository
-import com.hanix.waterwatch.data.source.OnboardingDataSource
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +25,7 @@ enum class PermissionDeniedKind {
 enum class PermissionGuideEvent { RequestPermissions, RequestBackgroundPermission, OpenSettings, Granted }
 
 class PermissionGuideViewModel(
-    private val hydrationRepository: HydrationRepository,
-    private val onboardingDataSource: OnboardingDataSource
+    private val hydrationRepository: HydrationRepository
 ) : ViewModel() {
 
     private val _dialog = MutableStateFlow<PermissionDeniedKind?>(null)
@@ -36,33 +34,36 @@ class PermissionGuideViewModel(
     private val _events = Channel<PermissionGuideEvent>(Channel.BUFFERED)
     val events: Flow<PermissionGuideEvent> = _events.receiveAsFlow()
 
-    /** 한 번이라도 거부했으면 권한 화면 대신 안내 팝업부터 다시 보여준다. */
-    fun onStartClick() {
+    /**
+     * 한 번 거부해서 다시 물을 수 있는 상태면 권한 화면 대신 안내 팝업부터 다시 보여준다.
+     * 시스템이 막아둔 상태는 요청하면 바로 거부가 돌아와 설정 안내로 이어진다.
+     * 거부 여부를 앱에 저장하지 않는다. 다시 설치하면 백업에서 되살아나 Health Connect 상태와 어긋난다.
+     * @param canAskAgain 시스템이 아는 "다시 물을 수 있음" 여부
+     */
+    fun onStartClick(canAskAgain: Boolean) {
         viewModelScope.launch {
             // 설정에서 직접 켜고 들어온 경우
             if (hasPermissions()) {
                 finishWithBackgroundPermission()
                 return@launch
             }
-            val denials = onboardingDataSource.permissionDenialCount()
-            if (denials == 0) {
-                _events.send(PermissionGuideEvent.RequestPermissions)
+            if (canAskAgain) {
+                _dialog.value = PermissionDeniedKind.Reask
             } else {
-                _dialog.value = dialogFor(denials)
+                _events.send(PermissionGuideEvent.RequestPermissions)
             }
         }
     }
 
     /** 이 요청에 백그라운드 읽기도 들어 있어서, 필수 권한만 받았어도 다시 묻지 않고 넘어간다. */
-    fun onPermissionResult(granted: Boolean) {
+    fun onPermissionResult(granted: Boolean, canAskAgain: Boolean) {
         viewModelScope.launch {
             if (granted) {
                 _events.send(PermissionGuideEvent.Granted)
                 return@launch
             }
-            val denials = onboardingDataSource.addPermissionDenial()
-            Log.i(TAG, "권한 거부 누적=$denials")
-            _dialog.value = dialogFor(denials)
+            Log.i(TAG, "권한 거부 canAskAgain=$canAskAgain")
+            _dialog.value = if (canAskAgain) PermissionDeniedKind.Reask else PermissionDeniedKind.Settings
         }
     }
 
@@ -117,13 +118,7 @@ class PermissionGuideViewModel(
             .onFailure { Log.e(TAG, "권한 확인 실패", it) }
             .getOrDefault(false)
 
-    private fun dialogFor(denials: Int): PermissionDeniedKind =
-        if (denials >= DENIALS_UNTIL_SETTINGS) PermissionDeniedKind.Settings else PermissionDeniedKind.Reask
-
     companion object {
         private const val TAG = "WaterWatch/Onboarding"
-
-        /** Android 11+ 에서 두 번 거부하면 다시 묻지 않는다. Health Connect 권한도 같다. */
-        private const val DENIALS_UNTIL_SETTINGS = 2
     }
 }

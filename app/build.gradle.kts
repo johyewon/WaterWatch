@@ -13,7 +13,8 @@ android {
 
     defaultConfig {
         applicationId = "com.hanix.waterwatch"
-        minSdk = 29
+        // Health Connect 가 시스템에 들어 있는 Android 14 부터 지원한다. 그 전에는 별도 앱 설치가 필요하다.
+        minSdk = 34
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

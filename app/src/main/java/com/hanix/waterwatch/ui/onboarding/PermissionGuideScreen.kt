@@ -1,7 +1,9 @@
 package com.hanix.waterwatch.ui.onboarding
 
+import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,20 +61,19 @@ fun PermissionGuideRoute(
     onGranted: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PermissionGuideViewModel = viewModel {
-        PermissionGuideViewModel(
-            hydrationRepository = ServiceLocator.hydrationRepository,
-            onboardingDataSource = ServiceLocator.onboardingDataSource
-        )
+        PermissionGuideViewModel(hydrationRepository = ServiceLocator.hydrationRepository)
     }
 ) {
     val deniedKind by viewModel.dialog.collectAsStateWithLifecycle()
 
+    // 권한 요청 결과와 "다시 묻지 않음" 판단 모두 Activity 가 있어야 한다.
+    val activity = checkNotNull(LocalActivity.current)
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
     ) { result ->
         val granted = result.containsAll(HealthConnectDataSource.HYDRATION_PERMISSIONS)
         Log.i(TAG, "권한 요청 결과 granted=$granted result=$result")
-        viewModel.onPermissionResult(granted)
+        viewModel.onPermissionResult(granted, activity.canAskHydrationPermissionAgain())
     }
     val backgroundPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -101,7 +103,10 @@ fun PermissionGuideRoute(
         }
     }
 
-    PermissionGuideScreen(onStartClick = viewModel::onStartClick, modifier = modifier)
+    PermissionGuideScreen(
+        onStartClick = { viewModel.onStartClick(activity.canAskHydrationPermissionAgain()) },
+        modifier = modifier
+    )
 
     deniedKind?.let { kind ->
         PermissionDeniedDialog(
@@ -111,6 +116,14 @@ fun PermissionGuideRoute(
         )
     }
 }
+
+/**
+ * 거부한 뒤 Health Connect 권한 화면을 다시 띄울 수 있는지.
+ * Health Connect 권한은 시스템 런타임 권한이라 일반 권한처럼 시스템이 "다시 묻지 않음"을 안다
+ * (실기기에서 1번째 거부 뒤 true, 2번째 뒤 false 확인). 처음 묻기 전에도 false 라서 거부한 뒤에만 의미가 있다.
+ */
+private fun Activity.canAskHydrationPermissionAgain(): Boolean =
+    HealthConnectDataSource.HYDRATION_PERMISSIONS.any { ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
 
 @Composable
 fun PermissionGuideScreen(onStartClick: () -> Unit, modifier: Modifier = Modifier) {

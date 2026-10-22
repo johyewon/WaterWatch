@@ -1,6 +1,5 @@
 package com.hanix.waterwatch.ui.theme
 
-import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -19,7 +18,7 @@ fun WaterWatchTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    val colorScheme = if (dynamicColor) {
         dynamicLightColorScheme(LocalContext.current)
     } else {
         LightColorScheme
