@@ -32,8 +32,10 @@ import com.hanix.waterwatch.designsystem.ToastBackground
 
 // 크기·시간은 디자인 프로토타입(갤럭시 워치 384px 보드)을 2배 해상도로 보고 절반으로 옮겼다.
 
-private val TOAST_MIN_HEIGHT = 36.dp
-private val ICON_SIZE = 13.dp
+private val TOAST_MIN_HEIGHT = 32.dp
+// 보드는 양옆 52px 고정이지만 우리 취소 문구가 더 길어서, 그 너비를 최소로 두고 글자가 길면 늘린다.
+private val TOAST_MIN_WIDTH = 140.dp
+private val ICON_SIZE = 12.dp
 
 /** 위에서 이만큼 내려오며 나타난다. */
 private val TOAST_DROP = 4.dp
@@ -43,7 +45,6 @@ private val TOAST_EASING = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
 /**
  * 기록·취소 요청을 보낸 직후 잠깐 띄우는 안내.
  * 처음 나타날 때만 내려오고, 떠 있는 동안 [message] 가 바뀌면 글자만 바뀐다.
- * 둥근 화면은 위로 갈수록 좁아서 너비는 글자에 맞춘다.
  */
 @Composable
 fun WearToast(message: String, modifier: Modifier = Modifier) {
@@ -58,12 +59,12 @@ fun WearToast(message: String, modifier: Modifier = Modifier) {
                 alpha = entrance.value
                 translationY = -TOAST_DROP.toPx() * (1 - entrance.value)
             }
-            .defaultMinSize(minHeight = TOAST_MIN_HEIGHT)
+            .defaultMinSize(minWidth = TOAST_MIN_WIDTH, minHeight = TOAST_MIN_HEIGHT)
             .background(ToastBackground, CircleShape)
-            .padding(horizontal = 12.dp, vertical = 5.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
             // 화면을 보지 않는 사용자에게도 결과를 읽어준다.
             .semantics { liveRegion = LiveRegionMode.Polite },
-        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -72,6 +73,6 @@ fun WearToast(message: String, modifier: Modifier = Modifier) {
             tint = Accent,
             modifier = Modifier.size(ICON_SIZE)
         )
-        Text(text = message, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(text = message, color = Ink, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }

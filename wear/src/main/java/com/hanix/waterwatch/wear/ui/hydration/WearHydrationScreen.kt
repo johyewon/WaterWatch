@@ -1,5 +1,8 @@
 package com.hanix.waterwatch.wear.ui.hydration
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,16 +16,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,9 +47,13 @@ import com.hanix.waterwatch.designsystem.ButtonMoreIcon
 import com.hanix.waterwatch.designsystem.HydrationBackground
 import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
 import com.hanix.waterwatch.designsystem.Ink
+import com.hanix.waterwatch.designsystem.RollingNumber
+import com.hanix.waterwatch.designsystem.headerBackgroundColor
+import com.hanix.waterwatch.designsystem.readableTextColor
 import com.hanix.waterwatch.wear.R
 import com.hanix.waterwatch.wear.data.source.TodayIntake
 import com.hanix.waterwatch.wear.locator.ServiceLocator
+import com.hanix.waterwatch.wear.ui.theme.WearTypography
 
 // 크기는 디자인 프로토타입(갤럭시 워치 384px 보드)을 2배 해상도로 보고 절반으로 옮겼다.
 
@@ -51,8 +63,19 @@ private val QUICK_SERVINGS_ML = listOf(120, 250)
 private val HEADER_PADDING_TOP = 17.dp
 private val HEADER_PADDING_HORIZONTAL = 20.dp
 
+private val TOTAL_STYLE = TextStyle(
+    fontSize = 24.sp,
+    fontWeight = FontWeight.ExtraBold,
+    letterSpacing = (-0.5).sp,
+    lineHeight = 1.05.em
+)
+private const val LOADED_FADE_MILLIS = 250
+
 // 헤더 위에 겹쳐 뜬다.
-private val TOAST_PADDING_TOP = 32.dp
+private val TOAST_PADDING_TOP = 50.dp
+
+/** 물이 차올라 위쪽 배경이 어두워지면 글자색을 이 시간 동안 흰색으로 바꾼다. 프로토타입 값 */
+private val INK_TWEEN = tween<Color>(durationMillis = 600)
 
 private val BUTTONS_PADDING_BOTTOM = 36.dp
 private val BUTTON_SPACING = 3.dp
@@ -102,6 +125,11 @@ fun WearHydrationScreen(
     modifier: Modifier = Modifier
 ) {
     val progress = progressOf(todayIntake)
+    val ink by animateColorAsState(
+        readableTextColor(HydrationBackgroundSpec.Watch.headerBackgroundColor(progress), Ink),
+        INK_TWEEN,
+        label = "ink"
+    )
     var showMore by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -121,21 +149,29 @@ fun WearHydrationScreen(
                 .padding(top = HEADER_PADDING_TOP, start = HEADER_PADDING_HORIZONTAL, end = HEADER_PADDING_HORIZONTAL),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (todayIntake == null) {
-                Text(text = "폰 연결 대기", color = Ink)
-            } else {
-                TotalMl(totalMl = todayIntake.totalMl)
+            // 폰에서 값을 받기 전에는 0 이 보였다가 바뀌지 않도록 숨겨 두고, 받으면 나타나게 한다.
+            // 숨기는 동안에도 자리는 차지해서 받은 뒤에 화면이 밀리지 않는다.
+            val loaded = todayIntake != null
+            val loadedAlpha by animateFloatAsState(if (loaded) 1f else 0f, tween(LOADED_FADE_MILLIS), label = "loadedAlpha")
+            Column(
+                modifier = Modifier.graphicsLayer { alpha = loadedAlpha },
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 처음 받은 값은 굴리지 않는다. 받기 전(0)과 후를 다른 슬롯으로 그려서 새로 시작하게 한다.
+                key(loaded) {
+                    TotalMl(totalMl = todayIntake?.totalMl ?: 0, color = ink)
+                }
                 Text(
-                    text = remainingLabel(todayIntake),
-                    color = Ink,
+                    text = todayIntake?.let { remainingLabel(it) }.orEmpty(),
+                    color = ink,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
             when {
-                sendFailed -> Text(text = "전송 실패 — 폰 연결 확인", color = Ink)
-                recordFailed -> Text(text = "폰에서 기록 실패", color = Ink)
+                sendFailed -> Text(text = "전송 실패 — 폰 연결 확인", color = ink)
+                recordFailed -> Text(text = "폰에서 기록 실패", color = ink)
             }
         }
 
@@ -171,17 +207,10 @@ fun WearHydrationScreen(
 }
 
 @Composable
-private fun TotalMl(totalMl: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            text = "%,d".format(totalMl),
-            color = Ink,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = (-0.5).sp,
-            modifier = Modifier.alignByBaseline()
-        )
-        Text(text = "ml", color = Ink, fontSize = 14.sp, modifier = Modifier.alignByBaseline())
+private fun TotalMl(totalMl: Int, color: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(1.5.dp)) {
+        RollingNumber(value = totalMl, style = TOTAL_STYLE, color = color, modifier = Modifier.alignByBaseline())
+        Text(text = "ml", color = color, fontSize = 14.sp, modifier = Modifier.alignByBaseline())
     }
 }
 
@@ -245,7 +274,7 @@ private fun remainingLabel(todayIntake: TodayIntake): String {
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
 fun WearHydrationScreenPreview() {
-    MaterialTheme {
+    MaterialTheme(typography = WearTypography) {
         WearHydrationScreen(todayIntake = TodayIntake(totalMl = 800, goalMl = 2_000))
     }
 }
@@ -253,7 +282,7 @@ fun WearHydrationScreenPreview() {
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
 fun WearHydrationScreenWaitingPreview() {
-    MaterialTheme {
+    MaterialTheme(typography = WearTypography) {
         WearHydrationScreen(todayIntake = null, sendFailed = true)
     }
 }

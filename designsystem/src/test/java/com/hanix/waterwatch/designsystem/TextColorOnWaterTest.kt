@@ -24,4 +24,10 @@ class TextColorOnWaterTest {
         assertEquals(WaterFullTop, HydrationBackgroundSpec.Phone.headerBackgroundColor(1f))
         assertEquals(BackgroundLightTop, HydrationBackgroundSpec.Phone.headerBackgroundColor(0f))
     }
+
+    @Test
+    fun `워치도 하루 시작에는 어두운색, 목표를 채우면 흰색이다`() {
+        assertEquals(Ink, readableTextColor(HydrationBackgroundSpec.Watch.headerBackgroundColor(0f), Ink))
+        assertEquals(Color.White, readableTextColor(HydrationBackgroundSpec.Watch.headerBackgroundColor(1f), Ink))
+    }
 }
