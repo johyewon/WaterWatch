@@ -29,7 +29,6 @@ import com.hanix.waterwatch.designsystem.R
 import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.designsystem.ToastBackground
 import com.hanix.waterwatch.designsystem.ToastTextStyle
-import kotlin.math.roundToInt
 
 // 크기·시간은 디자인 프로토타입 값 그대로. 색·글자·모서리·간격은 테마에서 가져온다.
 
@@ -41,11 +40,11 @@ private const val TOAST_ENTER_MILLIS = 280
 private val TOAST_EASING = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
 
 /**
- * 기록 직후 잠깐 띄우는 "OOml 기록했어요" 안내.
- * 처음 나타날 때만 올라오고, 떠 있는 동안 [ml] 이 바뀌면 글자만 바뀐다. 사라질 때는 바로 사라진다.
+ * 기록·목표 변경 직후 잠깐 띄우는 안내.
+ * 처음 나타날 때만 올라오고, 떠 있는 동안 [message] 가 바뀌면 글자만 바뀐다. 사라질 때는 바로 사라진다.
  */
 @Composable
-fun RecordedToast(ml: Double, modifier: Modifier = Modifier) {
+fun HydrationToast(message: String, modifier: Modifier = Modifier) {
     val entrance = remember { Animatable(0f) }
     LaunchedEffect(entrance) {
         entrance.animateTo(1f, tween(TOAST_ENTER_MILLIS, easing = TOAST_EASING))
@@ -61,12 +60,12 @@ fun RecordedToast(ml: Double, modifier: Modifier = Modifier) {
             .defaultMinSize(minHeight = TOAST_MIN_HEIGHT)
             .background(ToastBackground, MaterialTheme.shapes.medium)
             .padding(horizontal = 18.dp, vertical = 14.dp)
-            // 화면을 보지 않는 사용자에게도 기록 결과를 읽어준다.
+            // 화면을 보지 않는 사용자에게도 결과를 읽어준다.
             .semantics { liveRegion = LiveRegionMode.Polite },
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(painter = painterResource(R.drawable.ic_toast_check), contentDescription = null, tint = Accent)
-        Text(text = "${ml.roundToInt()}ml 기록했어요", color = Ink, style = ToastTextStyle)
+        Text(text = message, color = Ink, style = ToastTextStyle)
     }
 }

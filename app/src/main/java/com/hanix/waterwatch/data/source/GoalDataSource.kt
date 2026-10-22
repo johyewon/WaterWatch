@@ -2,6 +2,7 @@ package com.hanix.waterwatch.data.source
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -15,6 +16,8 @@ interface GoalDataSource {
 
     /** 저장된 값이 없으면 기본 목표를 준다. */
     val goalMl: Flow<Int>
+
+    suspend fun setGoalMl(ml: Int)
 }
 
 // 같은 파일에 DataStore 인스턴스가 둘 이상 생기면 런타임 예외라 top-level 위임으로 하나만 둔다.
@@ -26,6 +29,10 @@ internal class GoalDataSourceImpl(private val context: Context) : GoalDataSource
     override val goalMl: Flow<Int> = context.goalDataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
         .map { it[KEY_GOAL_ML] ?: DEFAULT_GOAL_ML }
+
+    override suspend fun setGoalMl(ml: Int) {
+        context.goalDataStore.edit { it[KEY_GOAL_ML] = ml }
+    }
 
     companion object {
         private val KEY_GOAL_ML: Preferences.Key<Int> = intPreferencesKey("goal_ml")

@@ -15,9 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
+/** @param firstEntry 온보딩을 막 마치고 들어왔는지. 그렇다면 첫 안내 토스트를 띄운다. */
 class HydrationViewModel(
-    private val hydrationRepository: HydrationRepository
+    private val hydrationRepository: HydrationRepository,
+    firstEntry: Boolean = false
 ) : ViewModel() {
 
     /** 동기 조회이고 앱 수명 중 바뀌지 않아 상태로 들지 않는다. */
@@ -44,14 +47,15 @@ class HydrationViewModel(
     private val _requestPermissions = Channel<Unit>(Channel.BUFFERED)
     val requestPermissions: Flow<Unit> = _requestPermissions.receiveAsFlow()
 
-    /** 방금 기록한 양(ml). 토스트로 잠깐 보여주고, null 이면 숨긴다. */
-    private val _recordedToastMl = MutableStateFlow<Double?>(null)
-    val recordedToastMl: StateFlow<Double?> = _recordedToastMl.asStateFlow()
+    /** 토스트 문구. null 이면 숨긴다. */
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
 
     private var intakeChangeJob: Job? = null
     private var toastDismissJob: Job? = null
 
     init {
+        if (firstEntry) showToast("목표 설정 완료! 지금 한 잔 마셔볼까요?")
         loadPermissionState()
         // 폰에서 누른 기록·취소도, 워치에서 온 기록도 여기서 다시 읽는다.
         // 조회 경로에 워치 발행이 물려 있어 워치까지 같이 갱신된다.
@@ -72,7 +76,7 @@ class HydrationViewModel(
             runCatching { hydrationRepository.recordIntake(ml) }
                 .onSuccess {
                     Log.i(TAG, "기록 성공 ml=$ml")
-                    showRecordedToast(ml)
+                    showToast("${ml.roundToInt()}ml 기록했어요")
                 }
                 .onFailure { Log.e(TAG, "기록 실패 ml=$ml", it) }
         }
@@ -85,10 +89,21 @@ class HydrationViewModel(
                     Log.i(TAG, "기록 취소 deleted=$deleted")
                     if (deleted) {
                         // 방금 기록 토스트가 떠 있으면 취소한 기록을 가리키게 되므로 바로 내린다.
-                        hideRecordedToast()
+                        hideToast()
                     }
                 }
                 .onFailure { Log.e(TAG, "기록 취소 실패", it) }
+        }
+    }
+
+    fun changeGoal(goalMl: Int) {
+        viewModelScope.launch {
+            runCatching { hydrationRepository.setGoalMl(goalMl) }
+                .onSuccess {
+                    Log.i(TAG, "목표 변경 goal=$goalMl")
+                    showToast("하루 목표를 %,dml로 바꿨어요".format(goalMl))
+                }
+                .onFailure { Log.e(TAG, "목표 변경 실패 goal=$goalMl", it) }
         }
     }
 
@@ -107,19 +122,19 @@ class HydrationViewModel(
         }
     }
 
-    /** 연달아 기록하면 내용만 바꾸고 사라질 시간을 다시 센다. */
-    private fun showRecordedToast(ml: Double) {
+    /** 연달아 띄우면 내용만 바꾸고 사라질 시간을 다시 센다. */
+    private fun showToast(message: String) {
         toastDismissJob?.cancel()
-        _recordedToastMl.value = ml
+        _toastMessage.value = message
         toastDismissJob = viewModelScope.launch {
-            delay(RECORDED_TOAST_MS)
-            _recordedToastMl.value = null
+            delay(TOAST_MS)
+            _toastMessage.value = null
         }
     }
 
-    private fun hideRecordedToast() {
+    private fun hideToast() {
         toastDismissJob?.cancel()
-        _recordedToastMl.value = null
+        _toastMessage.value = null
     }
 
     private fun loadPermissionState() {
@@ -150,6 +165,6 @@ class HydrationViewModel(
     companion object {
         private const val TAG = "WaterWatch/HC"
         private const val INTAKE_CHANGE_COOLDOWN_MS = 500L
-        private const val RECORDED_TOAST_MS = 4_000L
+        private const val TOAST_MS = 4_000L
     }
 }

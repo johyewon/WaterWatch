@@ -28,6 +28,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,6 +62,7 @@ import com.hanix.waterwatch.designsystem.readableTextColor
 import com.hanix.waterwatch.locator.ServiceLocator
 import com.hanix.waterwatch.ui.component.HydrationButton
 import com.hanix.waterwatch.ui.component.HydrationButtonStyle
+import com.hanix.waterwatch.ui.goal.GoalSheet
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -85,20 +89,22 @@ private val SETTINGS_ICON_SIZE = 22.dp
 
 private val TEXT_COLOR_TWEEN = tween<Color>(durationMillis = 600)
 
-/** 기록 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
+/** 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
 private val TOAST_BOTTOM_MARGIN = 150.dp
 
 @Composable
 fun HydrationRoute(
     modifier: Modifier = Modifier,
+    firstEntry: Boolean = false,
     viewModel: HydrationViewModel = viewModel {
-        HydrationViewModel(hydrationRepository = ServiceLocator.hydrationRepository)
+        HydrationViewModel(hydrationRepository = ServiceLocator.hydrationRepository, firstEntry = firstEntry)
     }
 ) {
     val granted by viewModel.granted.collectAsStateWithLifecycle()
     val total by viewModel.total.collectAsStateWithLifecycle()
     val goalMl by viewModel.goalMl.collectAsStateWithLifecycle()
-    val recordedToastMl by viewModel.recordedToastMl.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
+    var showGoalSheet by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -119,12 +125,27 @@ fun HydrationRoute(
         today = LocalDate.now(),
         total = total,
         goalMl = goalMl,
-        recordedToastMl = recordedToastMl,
+        toastMessage = toastMessage,
         onRecordClick = viewModel::recordIntake,
         onUndoClick = viewModel::undoLastIntake,
+        onSettingsClick = { showGoalSheet = true },
         modifier = modifier
     )
 
+    // 목표를 읽기 전에는 시트에 넣을 값이 없어서 열지 않는다.
+    val currentGoalMl = goalMl
+    if (showGoalSheet && currentGoalMl != null) {
+        GoalSheet(
+            initialGoalMl = currentGoalMl,
+            confirmText = "저장하기",
+            note = "오늘 기록부터 바로 변경돼요.",
+            onConfirm = { goal ->
+                showGoalSheet = false
+                viewModel.changeGoal(goal)
+            },
+            onDismissRequest = { showGoalSheet = false }
+        )
+    }
 }
 
 @Composable
@@ -134,7 +155,7 @@ fun HydrationScreen(
     today: LocalDate,
     total: Result<Double?>?,
     goalMl: Int?,
-    recordedToastMl: Double? = null,
+    toastMessage: String? = null,
     onRecordClick: (ml: Double) -> Unit = {},
     onCustomInputClick: () -> Unit = {},
     onUndoClick: () -> Unit = {},
@@ -227,9 +248,9 @@ fun HydrationScreen(
             )
         }
 
-        if (recordedToastMl != null) {
-            RecordedToast(
-                ml = recordedToastMl,
+        if (toastMessage != null) {
+            HydrationToast(
+                message = toastMessage,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .safeDrawingPadding()

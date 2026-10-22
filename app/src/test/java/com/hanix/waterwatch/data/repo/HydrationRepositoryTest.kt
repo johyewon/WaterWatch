@@ -5,9 +5,8 @@ import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -23,7 +22,7 @@ class HydrationRepositoryTest {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
             wearSyncDataSource = wearSyncDataSource,
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertEquals(250.0, repository.todayTotalMl())
@@ -32,11 +31,27 @@ class HydrationRepositoryTest {
     }
 
     @Test
+    fun `목표를 바꾸면 새 목표를 오늘 총량과 함께 워치에 발행한다`() = runBlocking {
+        val wearSyncDataSource = FakeWearSyncDataSource()
+        val repository = HydrationRepository(
+            healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource()
+        )
+
+        repository.setGoalMl(2_500)
+
+        assertEquals(2_500, repository.goalMl.first())
+        assertEquals(250.0, wearSyncDataSource.publishedMl)
+        assertEquals(2_500, wearSyncDataSource.publishedGoalMl)
+    }
+
+    @Test
     fun `워치 발행이 실패해도 조회 결과는 그대로 반환한다`() = runBlocking {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
             wearSyncDataSource = FakeWearSyncDataSource(failOnPublish = true),
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertEquals(250.0, repository.todayTotalMl())
@@ -48,7 +63,7 @@ class HydrationRepositoryTest {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
             wearSyncDataSource = wearSyncDataSource,
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertNull(repository.todayTotalMl())
@@ -62,7 +77,7 @@ class HydrationRepositoryTest {
         val repository = HydrationRepository(
             healthConnectDataSource = healthConnectDataSource,
             wearSyncDataSource = FakeWearSyncDataSource(),
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
 
         repository.recordIntake(250.0)
@@ -75,7 +90,7 @@ class HydrationRepositoryTest {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
             wearSyncDataSource = FakeWearSyncDataSource(),
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
         val changed = async(start = CoroutineStart.UNDISPATCHED) { repository.intakeChanged.first() }
 
@@ -90,7 +105,7 @@ class HydrationRepositoryTest {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
             wearSyncDataSource = wearSyncDataSource,
-            goalDataSource = FakeGoalDataSource
+            goalDataSource = FakeGoalDataSource()
         )
 
         repository.sendRecordResult(nodeId = "node-1", success = false)
@@ -142,8 +157,12 @@ class HydrationRepositoryTest {
         }
     }
 
-    private object FakeGoalDataSource : GoalDataSource {
-        override val goalMl: Flow<Int> = flowOf(GOAL_ML)
+    private class FakeGoalDataSource : GoalDataSource {
+        override val goalMl = MutableStateFlow(GOAL_ML)
+
+        override suspend fun setGoalMl(ml: Int) {
+            goalMl.value = ml
+        }
     }
 
     private companion object {

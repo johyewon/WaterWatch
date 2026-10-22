@@ -14,7 +14,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.hanix.waterwatch.locator.ServiceLocator
+import com.hanix.waterwatch.ui.onboarding.GoalGuideScreen
 import com.hanix.waterwatch.ui.onboarding.PermissionGuideRoute
 import com.hanix.waterwatch.ui.theme.WaterWatchTheme
 import kotlinx.coroutines.launch
@@ -43,7 +45,7 @@ class HydrationActivity : ComponentActivity() {
         // 저장된 값을 읽기 전에 그리면 안내 화면이 잠깐 비쳤다가 메인으로 바뀐다.
         val completed = onboardingCompleted ?: return
         // 시작 화면은 처음 정한 값으로 고정한다. 온보딩 중에 값이 바뀌어도 NavHost 를 다시 만들지 않는다.
-        val startDestination = remember { if (completed) Main else PermissionGuide }
+        val startDestination: Any = remember { if (completed) Main() else PermissionGuide }
 
         val navController = rememberNavController()
         val scope = rememberCoroutineScope()
@@ -56,18 +58,33 @@ class HydrationActivity : ComponentActivity() {
             composable<PermissionGuide> {
                 PermissionGuideRoute(
                     onGranted = {
-                        // ponytail: 목표 설정 시트가 생기면 그 뒤로 옮긴다.
-                        scope.launch {
-                            ServiceLocator.onboardingDataSource.complete()
-                            navController.navigate(Main) {
-                                popUpTo<PermissionGuide> { inclusive = true }
-                            }
+                        navController.navigate(GoalGuide) {
+                            popUpTo<PermissionGuide> { inclusive = true }
                         }
                     }
                 )
             }
-            composable<Main> {
-                HydrationRoute()
+            composable<GoalGuide> {
+                val goalMl by ServiceLocator.hydrationRepository.goalMl.collectAsStateWithLifecycle(initialValue = null)
+                // 저장된 목표(없으면 기본값)를 읽은 뒤에 그려야 시트가 그 값으로 열린다.
+                goalMl?.let { initialGoalMl ->
+                    GoalGuideScreen(
+                        initialGoalMl = initialGoalMl,
+                        onGoalSelected = { goal ->
+                            // 온보딩은 목표까지 정해야 끝난다. 여기서 앱을 끄면 다음에 권한 안내부터 다시 본다.
+                            scope.launch {
+                                ServiceLocator.hydrationRepository.setGoalMl(goal)
+                                ServiceLocator.onboardingDataSource.complete()
+                                navController.navigate(Main(firstEntry = true)) {
+                                    popUpTo<GoalGuide> { inclusive = true }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+            composable<Main> { entry ->
+                HydrationRoute(firstEntry = entry.toRoute<Main>().firstEntry)
             }
         }
     }
@@ -77,4 +94,8 @@ class HydrationActivity : ComponentActivity() {
 private object PermissionGuide
 
 @Serializable
-private object Main
+private object GoalGuide
+
+/** @property firstEntry 온보딩을 막 마치고 들어왔는지 */
+@Serializable
+private data class Main(val firstEntry: Boolean = false)

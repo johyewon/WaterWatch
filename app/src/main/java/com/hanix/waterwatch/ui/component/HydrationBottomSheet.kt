@@ -13,7 +13,11 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,9 +26,9 @@ import androidx.compose.ui.unit.sp
 import com.hanix.waterwatch.designsystem.BottomSheetBackground
 import com.hanix.waterwatch.designsystem.BottomSheetHandle
 import com.hanix.waterwatch.designsystem.BottomSheetScrim
-import com.hanix.waterwatch.designsystem.TitleText
 import com.hanix.waterwatch.designsystem.Radius
 import com.hanix.waterwatch.designsystem.Spacing
+import com.hanix.waterwatch.designsystem.TitleText
 import kotlinx.coroutines.launch
 
 // 크기는 디자인 프로토타입 값 그대로. 색·모서리는 :designsystem 에서 가져온다.
@@ -55,14 +59,30 @@ fun HydrationBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    /*
+     * 처음 고른 닫기 동작(취소·확인·바깥 탭) 하나만, 시트가 다 내려간 뒤 한 번 알린다.
+     * 내려가는 동안 버튼을 또 누르거나 바깥이 눌리면 시트가 스스로 닫히며 우리 애니메이션을 끊는데,
+     * 그때도 처음 고른 동작이 실행되도록 기억해 둔다. 받는 쪽이 값을 저장하거나 화면을 넘기므로 두 번 일어나면 안 된다.
+     */
+    var chosenAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var notified by remember { mutableStateOf(false) }
+    val notifyOnce: (() -> Unit) -> Unit = { action ->
+        if (notified.not()) {
+            notified = true
+            action()
+        }
+    }
     val hideThen: (() -> Unit) -> Unit = { action ->
-        scope.launch { sheetState.hide() }.invokeOnCompletion {
-            if (sheetState.isVisible.not()) action()
+        if (chosenAction == null) {
+            chosenAction = action
+            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                if (sheetState.isVisible.not()) notifyOnce(action)
+            }
         }
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { notifyOnce(chosenAction ?: onDismissRequest) },
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = Radius.XLarge, topEnd = Radius.XLarge),
         containerColor = BottomSheetBackground,

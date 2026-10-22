@@ -48,6 +48,13 @@ class HydrationRepository(
     suspend fun todayTotalMl(): Double? =
         healthConnectDataSource.readTodayTotalMl().also { publishToWear(it) }
 
+    /** 워치는 목표를 총량과 같은 데이터로 받는다. 총량을 다시 읽으면 새 목표가 같이 발행된다. */
+    suspend fun setGoalMl(ml: Int) {
+        goalDataSource.setGoalMl(ml)
+        runCatching { todayTotalMl() }
+            .onFailure { Log.w(TAG, "목표 변경 후 워치 발행 실패 — 목표 저장은 유효", it) }
+    }
+
     suspend fun recordIntake(ml: Double) {
         healthConnectDataSource.writeHydrationMl(ml)
         _intakeChanged.tryEmit(Unit)
@@ -64,7 +71,6 @@ class HydrationRepository(
         wearSyncDataSource.sendRecordResult(nodeId = nodeId, success = success)
     }
 
-    // ponytail: 목표는 총량을 조회할 때만 같이 보낸다. 폰에서 목표를 바꾸는 화면이 생기면 그때도 발행해야 한다.
     /** 워치 미페어링·Wearable API 없음은 폰 기능과 무관하므로 조회 실패로 올리지 않는다. */
     private suspend fun publishToWear(totalMl: Double?) {
         runCatching { wearSyncDataSource.publishToday(totalMl, goalDataSource.goalMl.first()) }
