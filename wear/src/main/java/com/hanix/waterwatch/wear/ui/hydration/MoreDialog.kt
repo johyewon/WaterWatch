@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -38,6 +39,7 @@ import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Dialog
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.Text
+import com.hanix.waterwatch.designsystem.RollingNumber
 import com.hanix.waterwatch.designsystem.SheetBackground
 import com.hanix.waterwatch.designsystem.SheetButton
 import com.hanix.waterwatch.designsystem.SheetContent
@@ -59,12 +61,14 @@ private val STEP_BUTTON_SIZE = 48.dp
 private val NO_CONTENT_PADDING = PaddingValues(0.dp)
 private const val DISABLED_ALPHA = 0.4f
 
-private const val DEFAULT_CUSTOM_ML = 300
-private const val CUSTOM_STEP_ML = 100
-private const val MIN_CUSTOM_ML = 100
-private const val MAX_CUSTOM_ML = 3_000
+private val WATER_INPUT_STYLE = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
 
-private enum class MorePage { Menu, CustomAmount }
+private const val DEFAULT_WATER_INPUT_ML = 300
+private const val WATER_INPUT_STEP_ML = 100
+private const val MIN_WATER_INPUT_ML = 100
+private const val MAX_WATER_INPUT_ML = 3_000
+
+private enum class MorePage { Menu, WaterInput }
 
 /**
  * 더보기 시트. 직접 입력한 양을 기록하거나 오늘 마지막 기록을 취소한다. 옆으로 밀면 닫힌다.
@@ -78,12 +82,10 @@ fun MoreDialog(
     onUndo: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // 직접 입력한 양은 프로토타입처럼 시트를 닫았다 열어도 남겨 둔다.
-    var customMl by remember { mutableIntStateOf(DEFAULT_CUSTOM_ML) }
-
     Dialog(visible = visible, onDismissRequest = onDismiss) {
         // 시트가 닫히면 이 내용이 사라졌다가 다시 만들어지므로, 여기 두면 열 때마다 메뉴부터 보인다.
         var page by remember { mutableStateOf(MorePage.Menu) }
+        var waterInputMl by remember { mutableIntStateOf(DEFAULT_WATER_INPUT_ML) }
 
         Column(
             modifier = Modifier
@@ -95,19 +97,23 @@ fun MoreDialog(
             when (page) {
                 MorePage.Menu -> MenuPage(
                     canUndo = canUndo,
-                    onCustomAmountClick = { page = MorePage.CustomAmount },
+                    // 폰 직접입력 시트처럼 열 때마다 기본값에서 시작한다.
+                    onWaterInputClick = {
+                        waterInputMl = DEFAULT_WATER_INPUT_ML
+                        page = MorePage.WaterInput
+                    },
                     onUndoClick = {
                         onUndo()
                         onDismiss()
                     },
                     onCloseClick = onDismiss
                 )
-                MorePage.CustomAmount -> CustomAmountPage(
-                    ml = customMl,
-                    onMlChange = { customMl = it.coerceIn(MIN_CUSTOM_ML, MAX_CUSTOM_ML) },
+                MorePage.WaterInput -> WaterInputPage(
+                    ml = waterInputMl,
+                    onMlChange = { waterInputMl = it.coerceIn(MIN_WATER_INPUT_ML, MAX_WATER_INPUT_ML) },
                     onBackClick = { page = MorePage.Menu },
                     onRecordClick = {
-                        onRecord(customMl)
+                        onRecord(waterInputMl)
                         onDismiss()
                     }
                 )
@@ -119,11 +125,11 @@ fun MoreDialog(
 @Composable
 private fun MenuPage(
     canUndo: Boolean,
-    onCustomAmountClick: () -> Unit,
+    onWaterInputClick: () -> Unit,
     onUndoClick: () -> Unit,
     onCloseClick: () -> Unit
 ) {
-    SheetButton(text = "직접 입력", onClick = onCustomAmountClick, width = PILL_WIDTH)
+    SheetButton(text = "직접 입력", onClick = onWaterInputClick, width = PILL_WIDTH)
     SheetButton(text = "이전 기록 취소하기", onClick = onUndoClick, width = UNDO_PILL_WIDTH, enabled = canUndo)
     SheetButton(
         text = "닫기",
@@ -136,7 +142,7 @@ private fun MenuPage(
 }
 
 @Composable
-private fun CustomAmountPage(
+private fun WaterInputPage(
     ml: Int,
     onMlChange: (Int) -> Unit,
     onBackClick: () -> Unit,
@@ -146,24 +152,24 @@ private fun CustomAmountPage(
     Row(
         modifier = Modifier
             .width(AMOUNT_ROW_WIDTH)
-            .crownSteps { steps -> onMlChange(ml + steps * CUSTOM_STEP_ML) },
+            .crownSteps { steps -> onMlChange(ml + steps * WATER_INPUT_STEP_ML) },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         SheetButton(
             text = "−",
-            onClick = { onMlChange(ml - CUSTOM_STEP_ML) },
+            onClick = { onMlChange(ml - WATER_INPUT_STEP_ML) },
             width = STEP_BUTTON_SIZE,
             fontSize = 22.sp,
             fontWeight = FontWeight.SemiBold
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "%,d".format(ml), color = SheetContent, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+            RollingNumber(value = ml, style = WATER_INPUT_STYLE, color = SheetContent)
             Text(text = "ml", color = SheetContent, fontSize = 12.sp)
         }
         SheetButton(
             text = "+",
-            onClick = { onMlChange(ml + CUSTOM_STEP_ML) },
+            onClick = { onMlChange(ml + WATER_INPUT_STEP_ML) },
             width = STEP_BUTTON_SIZE,
             fontSize = 22.sp,
             fontWeight = FontWeight.SemiBold
