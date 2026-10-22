@@ -117,6 +117,7 @@ fun HydrationRoute(
     val goalMl by viewModel.goalMl.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
     var showGoalSheet by rememberSaveable { mutableStateOf(false) }
+    var showWaterInputSheet by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
@@ -139,6 +140,7 @@ fun HydrationRoute(
         goalMl = goalMl,
         toastMessage = toastMessage,
         onRecordClick = viewModel::recordIntake,
+        onWaterInputClick = { showWaterInputSheet = true },
         onUndoClick = viewModel::undoLastIntake,
         onSettingsClick = { showGoalSheet = true },
         modifier = modifier
@@ -158,6 +160,16 @@ fun HydrationRoute(
             onDismissRequest = { showGoalSheet = false }
         )
     }
+
+    if (showWaterInputSheet) {
+        WaterInputSheet(
+            onRecord = { ml ->
+                showWaterInputSheet = false
+                viewModel.recordIntake(ml.toDouble())
+            },
+            onDismissRequest = { showWaterInputSheet = false }
+        )
+    }
 }
 
 @Composable
@@ -169,7 +181,7 @@ fun HydrationScreen(
     goalMl: Int?,
     toastMessage: String? = null,
     onRecordClick: (ml: Double) -> Unit = {},
-    onCustomInputClick: () -> Unit = {},
+    onWaterInputClick: () -> Unit = {},
     onUndoClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -225,7 +237,7 @@ fun HydrationScreen(
                 }
                 HydrationButton(
                     text = "직접입력",
-                    onClick = onCustomInputClick,
+                    onClick = onWaterInputClick,
                     style = HydrationButtonStyle.Outlined,
                     modifier = Modifier.weight(1f),
                     enabled = recordEnabled
