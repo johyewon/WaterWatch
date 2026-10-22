@@ -2,6 +2,7 @@ package com.hanix.waterwatch.ui.hydration
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -21,22 +22,24 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,7 @@ import com.hanix.waterwatch.designsystem.HeaderText
 import com.hanix.waterwatch.designsystem.HydrationBackground
 import com.hanix.waterwatch.designsystem.HydrationBackgroundSpec
 import com.hanix.waterwatch.designsystem.Ink
+import com.hanix.waterwatch.designsystem.RollingNumber
 import com.hanix.waterwatch.designsystem.Spacing
 import com.hanix.waterwatch.designsystem.UndoContent
 import com.hanix.waterwatch.designsystem.footerBackgroundColor
@@ -82,12 +86,20 @@ private const val HEADER_TOP_RATIO = 76f / 844f
 /** 브라우저 기본 줄 높이(normal)에 가깝게 맞춘다. */
 private val HEADER_LINE_HEIGHT = 1.2.em
 
+private val AMOUNT_STYLE = TextStyle(
+    fontSize = 64.sp,
+    fontWeight = FontWeight.ExtraBold,
+    letterSpacing = (-2).sp,
+    lineHeight = 1.05.em
+)
+
 private const val SETTINGS_TOP_RATIO = 52f / 844f
 private val SETTINGS_PADDING_END = 16.dp
 private val SETTINGS_BUTTON_SIZE = 44.dp
 private val SETTINGS_ICON_SIZE = 22.dp
 
 private val TEXT_COLOR_TWEEN = tween<Color>(durationMillis = 600)
+private const val LOADED_FADE_MILLIS = 250
 
 /** 토스트는 기록 버튼 바로 위에 뜬다. 프로토타입 위치 그대로 */
 private val TOAST_BOTTOM_MARGIN = 150.dp
@@ -187,6 +199,7 @@ fun HydrationScreen(
             Header(
                 today = today,
                 totalMl = totalMl,
+                totalLoaded = total != null,
                 status = total?.exceptionOrNull()?.let { "조회 실패 — ${it.javaClass.simpleName}" }
                     ?: goalMl?.let { remainingLabel(totalMl, it) },
                 healthConnectAvailable = healthConnectAvailable,
@@ -265,11 +278,16 @@ fun HydrationScreen(
 private fun Header(
     today: LocalDate,
     totalMl: Int,
+    totalLoaded: Boolean,
     status: String?,
     healthConnectAvailable: Boolean,
     textColors: TextColors,
     modifier: Modifier = Modifier
 ) {
+    // 총량을 읽기 전에는 0 이 보였다가 바뀌지 않도록 숫자와 남은 양을 숨겨 두고, 읽으면 나타나게 한다.
+    // 숨기는 동안에도 자리는 차지해서 읽은 뒤에 화면이 밀리지 않는다.
+    val loadedAlpha by animateFloatAsState(if (totalLoaded) 1f else 0f, tween(LOADED_FADE_MILLIS), label = "loadedAlpha")
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -282,18 +300,19 @@ private fun Header(
             fontWeight = FontWeight.SemiBold,
             lineHeight = HEADER_LINE_HEIGHT
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "%,d".format(totalMl),
-                modifier = Modifier.alignByBaseline(),
-                color = textColors.amount,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-2).sp,
-                lineHeight = 1.05.em,
-                // 숫자가 바뀌어도 폭이 흔들리지 않게 고정폭 숫자를 쓴다.
-                style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum")
-            )
+        Row(
+            modifier = Modifier.graphicsLayer { alpha = loadedAlpha },
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // 처음 불러온 값은 굴리지 않는다. 불러오기 전(0)과 후를 다른 슬롯으로 그려서 새로 시작하게 한다.
+            key(totalLoaded) {
+                RollingNumber(
+                    value = totalMl,
+                    style = AMOUNT_STYLE,
+                    color = textColors.amount,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
             Text(
                 text = "ml",
                 modifier = Modifier.alignByBaseline(),
@@ -302,7 +321,7 @@ private fun Header(
                 lineHeight = HEADER_LINE_HEIGHT
             )
         }
-        status?.let { StatusText(it, textColors.header) }
+        status?.let { StatusText(it, textColors.header, Modifier.graphicsLayer { alpha = loadedAlpha }) }
         if (healthConnectAvailable.not()) {
             StatusText("이 기기에서 Health Connect 를 사용할 수 없음", textColors.header)
         }
@@ -310,8 +329,15 @@ private fun Header(
 }
 
 @Composable
-private fun StatusText(text: String, color: Color) {
-    Text(text = text, color = color, fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = HEADER_LINE_HEIGHT)
+private fun StatusText(text: String, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        modifier = modifier,
+        color = color,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Medium,
+        lineHeight = HEADER_LINE_HEIGHT
+    )
 }
 
 /** 물 위에 놓인 글자색. 배경이 어두워지면 흰색으로 바뀐다. */
