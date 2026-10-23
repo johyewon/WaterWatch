@@ -12,19 +12,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.hanix.waterwatch.R
-import com.hanix.waterwatch.designsystem.BodyText
 import com.hanix.waterwatch.designsystem.DescriptionText
 import com.hanix.waterwatch.designsystem.Radius
 import com.hanix.waterwatch.designsystem.Spacing
-import com.hanix.waterwatch.designsystem.SubtleSurface
 import com.hanix.waterwatch.designsystem.TitleText
 import com.hanix.waterwatch.ui.component.HydrationButton
 import com.hanix.waterwatch.ui.component.HydrationButtonStyle
@@ -33,17 +29,13 @@ import com.hanix.waterwatch.ui.component.HydrationButtonStyle
 
 private val DIALOG_MARGIN_HORIZONTAL = 20.dp
 private val CARD_PADDING = PaddingValues(top = 28.dp, start = 20.dp, end = 20.dp, bottom = 20.dp)
-private val PATH_SPACING = 14.dp
 private val ACTIONS_SPACING = 20.dp
 
 /** 닫기 : 동작 버튼 너비 비율 */
 private const val CLOSE_WEIGHT = 1f
 private const val ACTION_WEIGHT = 1.4f
 
-/**
- * 필수 권한을 거부했을 때 띄우는 안내.
- * [PermissionDeniedKind.Settings] 면 설정 화면 경로를 같이 보여준다.
- */
+/** 필수 권한을 거부했을 때 띄우는 안내. */
 @Composable
 fun PermissionDeniedDialog(
     kind: PermissionDeniedKind,
@@ -82,21 +74,6 @@ fun PermissionDeniedDialog(
                 lineHeight = 22.sp,
                 textAlign = TextAlign.Center
             )
-            if (kind == PermissionDeniedKind.Settings) {
-                Text(
-                    text = "Health Connect › 앱 권한 › ${stringResource(R.string.app_name)}에서 ‘물마시기’를 켜 주세요.",
-                    modifier = Modifier
-                        .padding(top = PATH_SPACING)
-                        .fillMaxWidth()
-                        .background(SubtleSurface, RoundedCornerShape(Radius.Medium))
-                        .padding(horizontal = 14.dp, vertical = Spacing.Medium),
-                    color = BodyText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    lineHeight = 20.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
             Row(
                 modifier = Modifier.padding(top = ACTIONS_SPACING),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
