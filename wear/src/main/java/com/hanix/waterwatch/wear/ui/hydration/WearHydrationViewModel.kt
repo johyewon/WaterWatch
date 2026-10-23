@@ -65,16 +65,17 @@ class WearHydrationViewModel(
         }
     }
 
+    /** 폰처럼 취소는 토스트를 띄우지 않는다. */
     fun undoLastIntake() {
-        // ponytail: 취소한 양은 폰만 알아서 문구에 넣지 않는다. 회신 경로가 생기면 프로토타입처럼 'Nml 취소했어요'.
-        sendToPhone(label = "취소", toastMessage = "이전 기록을 취소했어요") { wearHydrationDataSource.requestUndo() }
+        sendToPhone(label = "취소", toastMessage = null) { wearHydrationDataSource.requestUndo() }
     }
 
     /**
      * 한 번에 하나만 보낸다. 그 사이에 들어온 터치는 버린다.
      * 전송 자체는 금방 끝나서 끝난 뒤에도 잠깐 더 막아야 연타가 걸러진다.
+     * @param toastMessage 보낸 뒤 띄울 문구. null 이면 떠 있던 토스트도 내린다(방금 취소한 기록을 가리키게 되므로).
      */
-    private fun sendToPhone(label: String, toastMessage: String, request: suspend () -> Unit) {
+    private fun sendToPhone(label: String, toastMessage: String?, request: suspend () -> Unit) {
         if (sendJob?.isActive == true) {
             Log.i(TAG, "전송 중이라 터치 무시 $label")
             return
@@ -83,7 +84,7 @@ class WearHydrationViewModel(
             _sendResult.value = runCatching { request() }
                 .onSuccess {
                     Log.i(TAG, "전송 성공 $label")
-                    showToast(toastMessage)
+                    if (toastMessage != null) showToast(toastMessage) else hideToast()
                 }
                 .onFailure { Log.e(TAG, "전송 실패 $label", it) }
             delay(SEND_COOLDOWN_MS)

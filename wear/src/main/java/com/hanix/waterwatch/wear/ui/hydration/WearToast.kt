@@ -33,7 +33,7 @@ import com.hanix.waterwatch.designsystem.ToastBackground
 // 크기·시간은 디자인 프로토타입(갤럭시 워치 384px 보드)을 2배 해상도로 보고 절반으로 옮겼다.
 
 private val TOAST_MIN_HEIGHT = 32.dp
-// 보드는 양옆 52px 고정이지만 우리 취소 문구가 더 길어서, 그 너비를 최소로 두고 글자가 길면 늘린다.
+// 보드는 양옆 52px 고정(너비 140dp). 글자가 그보다 길어도 잘리지 않도록 고정 대신 최소 너비로 둔다.
 private val TOAST_MIN_WIDTH = 140.dp
 private val ICON_SIZE = 12.dp
 
