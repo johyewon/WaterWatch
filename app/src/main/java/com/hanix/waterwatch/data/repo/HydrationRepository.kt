@@ -75,11 +75,9 @@ class HydrationRepository(
     private suspend fun publishToWear(totalMl: Double?) {
         runCatching { wearSyncDataSource.publishToday(totalMl, goalDataSource.goalMl.first()) }
             .onFailure {
-                if (it is ApiException && it.statusCode == CommonStatusCodes.API_NOT_CONNECTED) {
-                    Log.i(TAG, "워치 없음 — 발행 건너뜀")
-                } else {
-                    Log.w(TAG, "워치 발행 실패 — 폰 조회 결과는 유효", it)
-                }
+                // 워치를 안 쓰는 폰은 매번 이 경우라 남기지 않는다.
+                val noWatch = it is ApiException && it.statusCode == CommonStatusCodes.API_NOT_CONNECTED
+                if (noWatch.not()) Log.w(TAG, "워치 발행 실패 — 폰 조회 결과는 유효", it)
             }
     }
 

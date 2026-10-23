@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -21,7 +20,6 @@ class WearHydrationViewModel(
 
     /** null 은 폰에서 아직 오늘 값을 받지 못한 상태 */
     val todayIntake: StateFlow<TodayIntake?> = wearHydrationDataSource.todayIntake()
-        .onEach { Log.i(TAG, "오늘 섭취 상태 수신 $it") }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS),
@@ -49,7 +47,7 @@ class WearHydrationViewModel(
     init {
         viewModelScope.launch {
             wearHydrationDataSource.recordResults().collect {
-                Log.i(TAG, "폰 기록 결과 accepted=$it")
+                if (!it) Log.w(TAG, "폰에서 기록 실패")
                 _recordAccepted.value = it
                 // 실패 안내가 뜨는데 '기록했어요' 가 남아 있으면 안 된다.
                 if (!it) hideToast()
@@ -76,10 +74,7 @@ class WearHydrationViewModel(
      * @param toastMessage 보낸 뒤 띄울 문구. null 이면 떠 있던 토스트도 내린다(방금 취소한 기록을 가리키게 되므로).
      */
     private fun sendToPhone(label: String, toastMessage: String?, request: suspend () -> Unit) {
-        if (sendJob?.isActive == true) {
-            Log.i(TAG, "전송 중이라 터치 무시 $label")
-            return
-        }
+        if (sendJob?.isActive == true) return
         sendJob = viewModelScope.launch {
             _sendResult.value = runCatching { request() }
                 .onSuccess {

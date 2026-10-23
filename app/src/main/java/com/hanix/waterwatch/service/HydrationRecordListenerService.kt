@@ -63,7 +63,6 @@ class HydrationRecordListenerService : WearableListenerService() {
     // 백그라운드 읽기 권한이 없으면 여기서 실패한다. 기록·취소 자체는 유효하므로 로그만 남긴다.
     private suspend fun publishTodayToWear() {
         runCatching { hydrationRepository.todayTotalMl() }
-            .onSuccess { Log.i(TAG, "총량 갱신 — $it") }
             .onFailure { Log.e(TAG, "총량 재조회 실패 — 워치 값이 낡을 수 있음", it) }
     }
 

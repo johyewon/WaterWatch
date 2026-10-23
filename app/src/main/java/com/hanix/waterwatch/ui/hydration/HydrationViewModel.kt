@@ -66,7 +66,6 @@ class HydrationViewModel(
 
     /** 권한 요청은 ActivityResultContract 라서 화면이 수행하고 결과만 넘겨준다. */
     fun onPermissionResult(granted: Boolean) {
-        Log.i(TAG, "요청 결과 granted=$granted")
         _granted.value = granted
         if (granted) viewModelScope.launch { loadToday() }
     }
@@ -112,10 +111,7 @@ class HydrationViewModel(
      * 처리 자체는 수십 ms 라 끝난 뒤에도 잠깐 더 막아야 연타가 걸러진다.
      */
     private fun launchIntakeChange(block: suspend () -> Unit) {
-        if (intakeChangeJob?.isActive == true) {
-            Log.i(TAG, "처리 중이라 터치 무시")
-            return
-        }
+        if (intakeChangeJob?.isActive == true) return
         intakeChangeJob = viewModelScope.launch {
             block()
             delay(INTAKE_CHANGE_COOLDOWN_MS)
@@ -139,10 +135,9 @@ class HydrationViewModel(
 
     private fun loadPermissionState() {
         viewModelScope.launch {
-            Log.i(TAG, "Health Connect 사용 가능=$isHealthConnectAvailable")
             if (isHealthConnectAvailable.not()) return@launch
 
-            val granted = checkGranted("필수") { hydrationRepository.hasPermissions() }
+            val granted = hasPermissions()
             _granted.value = granted
             // 백그라운드 읽기는 온보딩에서 한 번만 묻는다. 거부한 사람에게 켤 때마다 다시 묻지 않는다.
             if (granted) loadToday() else _requestPermissions.send(Unit)
@@ -150,15 +145,13 @@ class HydrationViewModel(
     }
 
     // ponytail: 확인 실패는 미허용으로 보고 요청까지 진행. 실패 사유별 분기는 필요해지면.
-    private suspend fun checkGranted(label: String, check: suspend () -> Boolean): Boolean =
-        runCatching { check() }
-            .onFailure { Log.e(TAG, "$label 권한 확인 실패", it) }
+    private suspend fun hasPermissions(): Boolean =
+        runCatching { hydrationRepository.hasPermissions() }
+            .onFailure { Log.e(TAG, "권한 확인 실패", it) }
             .getOrDefault(false)
-            .also { Log.i(TAG, "$label 권한 확인 granted=$it") }
 
     private suspend fun loadToday() {
         _total.value = runCatching { hydrationRepository.todayTotalMl() }
-            .onSuccess { Log.i(TAG, "조회 성공 — 오늘 총량=${it?.let { ml -> "$ml ml" } ?: "기록 없음"}") }
             .onFailure { Log.e(TAG, "조회 실패", it) }
     }
 

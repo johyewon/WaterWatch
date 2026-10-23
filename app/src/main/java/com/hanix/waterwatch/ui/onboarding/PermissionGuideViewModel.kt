@@ -57,12 +57,12 @@ class PermissionGuideViewModel(
 
     /** 이 요청에 백그라운드 읽기도 들어 있어서, 필수 권한만 받았어도 다시 묻지 않고 넘어간다. */
     fun onPermissionResult(granted: Boolean, canAskAgain: Boolean) {
+        Log.i(TAG, "권한 요청 결과 granted=$granted canAskAgain=$canAskAgain")
         viewModelScope.launch {
             if (granted) {
                 _events.send(PermissionGuideEvent.Granted)
                 return@launch
             }
-            Log.i(TAG, "권한 거부 canAskAgain=$canAskAgain")
             _dialog.value = if (canAskAgain) PermissionDeniedKind.Reask else PermissionDeniedKind.Settings
         }
     }

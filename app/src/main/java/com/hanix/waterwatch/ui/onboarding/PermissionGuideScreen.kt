@@ -2,7 +2,6 @@ package com.hanix.waterwatch.ui.onboarding
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,8 +49,6 @@ private val TITLE_SPACING = 12.dp
 private val CAPTION_SPACING = 16.dp
 private val BUTTON_PADDING_BOTTOM = 16.dp
 
-private const val TAG = "WaterWatch/Onboarding"
-
 /**
  * 첫 진입 권한 안내. 버튼을 누르면 Health Connect 권한 화면을 띄운다.
  * 필수 권한을 받으면 [onGranted] 를 부른다. 거부하면 안내 팝업으로 다시 요청하거나 설정으로 보낸다.
@@ -72,7 +69,6 @@ fun PermissionGuideRoute(
         contract = PermissionController.createRequestPermissionResultContract()
     ) { result ->
         val granted = result.containsAll(HealthConnectDataSource.HYDRATION_PERMISSIONS)
-        Log.i(TAG, "권한 요청 결과 granted=$granted result=$result")
         viewModel.onPermissionResult(granted, activity.canAskHydrationPermissionAgain())
     }
     val backgroundPermissionLauncher = rememberLauncherForActivityResult(
