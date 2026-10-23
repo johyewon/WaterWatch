@@ -69,7 +69,7 @@
 마신 물 기록은 Health Connect에 저장돼요. 다른 건강 앱에서 기록한 물도 함께 더해지고, 꽥에서 기록한 물도 다른 앱에서 볼 수 있어요.
 
 🔒 가입 없이, 내 기기에만
-회원가입도 광고도 없어요. 기록은 내 휴대폰의 Health Connect에만 저장되고 개발자에게 전송되지 않아요.
+회원가입 없이 바로 써요. 기록은 내 휴대폰의 Health Connect에만 저장되고 개발자에게 전송되지 않아요.
 
 📱 이용 환경
 - 휴대폰: Android 10 이상, Health Connect 필요 (Android 13 이하는 Health Connect 앱 설치)
