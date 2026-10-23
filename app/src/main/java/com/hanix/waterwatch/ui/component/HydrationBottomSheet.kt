@@ -1,13 +1,16 @@
 package com.hanix.waterwatch.ui.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -36,8 +39,10 @@ import kotlinx.coroutines.launch
 private val CONTENT_PADDING_HORIZONTAL = 20.dp
 private val CONTENT_PADDING_BOTTOM = 30.dp
 private val ACTIONS_PADDING_TOP = 32.dp
+private val HANDLE_PADDING_TOP = 12.dp
 private val HANDLE_WIDTH = 36.dp
 private val HANDLE_HEIGHT = 5.dp
+private val TITLE_PADDING_TOP = 20.dp
 
 /** 취소 : 확인 버튼 너비 비율 */
 private const val CANCEL_WEIGHT = 1f
@@ -87,9 +92,13 @@ fun HydrationBottomSheet(
         shape = RoundedCornerShape(topStart = Radius.XLarge, topEnd = Radius.XLarge),
         containerColor = BottomSheetBackground,
         scrimColor = BottomSheetScrim,
-        // ponytail: 공식 핸들은 위아래 여백이 22dp 로 고정이라 프로토타입(위 12, 제목까지 20)보다 조금 넓다. 맞춰야 하면 핸들을 직접 그린다.
         dragHandle = {
-            BottomSheetDefaults.DragHandle(width = HANDLE_WIDTH, height = HANDLE_HEIGHT, color = BottomSheetHandle)
+            Box(
+                modifier = Modifier
+                    .padding(top = HANDLE_PADDING_TOP)
+                    .size(HANDLE_WIDTH, HANDLE_HEIGHT)
+                    .background(BottomSheetHandle, CircleShape)
+            )
         }
     ) {
         Column(
@@ -99,7 +108,9 @@ fun HydrationBottomSheet(
         ) {
             Text(
                 text = title,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = TITLE_PADDING_TOP),
                 color = TitleText,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
