@@ -1,8 +1,14 @@
 package com.hanix.waterwatch.data.repo
 
+import com.hanix.waterwatch.data.source.GoalDataSource
 import com.hanix.waterwatch.data.source.HealthConnectDataSource
 import com.hanix.waterwatch.data.source.WearSyncDataSource
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -15,18 +21,37 @@ class HydrationRepositoryTest {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertEquals(250.0, repository.todayTotalMl())
         assertEquals(250.0, wearSyncDataSource.publishedMl)
+        assertEquals(GOAL_ML, wearSyncDataSource.publishedGoalMl)
+    }
+
+    @Test
+    fun `목표를 바꾸면 새 목표를 오늘 총량과 함께 워치에 발행한다`() = runBlocking {
+        val wearSyncDataSource = FakeWearSyncDataSource()
+        val repository = HydrationRepository(
+            healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource()
+        )
+
+        repository.setGoalMl(2_500)
+
+        assertEquals(2_500, repository.goalMl.first())
+        assertEquals(250.0, wearSyncDataSource.publishedMl)
+        assertEquals(2_500, wearSyncDataSource.publishedGoalMl)
     }
 
     @Test
     fun `워치 발행이 실패해도 조회 결과는 그대로 반환한다`() = runBlocking {
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = 250.0),
-            wearSyncDataSource = FakeWearSyncDataSource(failOnPublish = true)
+            wearSyncDataSource = FakeWearSyncDataSource(failOnPublish = true),
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertEquals(250.0, repository.todayTotalMl())
@@ -37,7 +62,8 @@ class HydrationRepositoryTest {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource()
         )
 
         assertNull(repository.todayTotalMl())
@@ -50,7 +76,8 @@ class HydrationRepositoryTest {
         val healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null)
         val repository = HydrationRepository(
             healthConnectDataSource = healthConnectDataSource,
-            wearSyncDataSource = FakeWearSyncDataSource()
+            wearSyncDataSource = FakeWearSyncDataSource(),
+            goalDataSource = FakeGoalDataSource()
         )
 
         repository.recordIntake(250.0)
@@ -59,11 +86,26 @@ class HydrationRepositoryTest {
     }
 
     @Test
+    fun `기록하면 폰 화면이 다시 읽도록 바뀌었다는 신호를 보낸다`() = runBlocking {
+        val repository = HydrationRepository(
+            healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
+            wearSyncDataSource = FakeWearSyncDataSource(),
+            goalDataSource = FakeGoalDataSource()
+        )
+        val changed = async(start = CoroutineStart.UNDISPATCHED) { repository.intakeChanged.first() }
+
+        repository.recordIntake(250.0)
+
+        withTimeout(1_000) { changed.await() }
+    }
+
+    @Test
     fun `기록 결과는 요청한 노드에 그대로 회신된다`() = runBlocking {
         val wearSyncDataSource = FakeWearSyncDataSource()
         val repository = HydrationRepository(
             healthConnectDataSource = FakeHealthConnectDataSource(totalMl = null),
-            wearSyncDataSource = wearSyncDataSource
+            wearSyncDataSource = wearSyncDataSource,
+            goalDataSource = FakeGoalDataSource()
         )
 
         repository.sendRecordResult(nodeId = "node-1", success = false)
@@ -88,6 +130,8 @@ class HydrationRepositoryTest {
         override suspend fun writeHydrationMl(ml: Double) {
             writtenMl = ml
         }
+
+        override suspend fun deleteLatestTodayRecord(): Boolean = false
     }
 
     private class FakeWearSyncDataSource(
@@ -96,12 +140,14 @@ class HydrationRepositoryTest {
 
         var published: Boolean = false
         var publishedMl: Double? = null
+        var publishedGoalMl: Int? = null
         var sentResult: Pair<String, Boolean>? = null
 
-        override suspend fun publishTodayTotal(ml: Double?) {
+        override suspend fun publishToday(totalMl: Double?, goalMl: Int) {
             if (failOnPublish) throw IllegalStateException("Wearable API is not available")
             published = true
-            publishedMl = ml
+            publishedMl = totalMl
+            publishedGoalMl = goalMl
         }
 
         override suspend fun isWatchConnected(): Boolean = false
@@ -109,5 +155,17 @@ class HydrationRepositoryTest {
         override suspend fun sendRecordResult(nodeId: String, success: Boolean) {
             sentResult = nodeId to success
         }
+    }
+
+    private class FakeGoalDataSource : GoalDataSource {
+        override val goalMl = MutableStateFlow(GOAL_ML)
+
+        override suspend fun setGoalMl(ml: Int) {
+            goalMl.value = ml
+        }
+    }
+
+    private companion object {
+        const val GOAL_ML = 2_000
     }
 }

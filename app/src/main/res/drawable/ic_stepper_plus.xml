@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디자인 프로토타입 시트 스테퍼의 + 표시. 기록 버튼 + 보다 선이 조금 굵다. 색은 코드에서 입힌다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:pathData="M12,5 L12,19 M5,12 L19,12"
+        android:strokeWidth="2.2"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round" />
+</vector>

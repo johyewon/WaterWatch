@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // Navigation 의 type-safe 경로가 @Serializable 을 쓴다.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -11,7 +13,8 @@ android {
 
     defaultConfig {
         applicationId = "com.hanix.waterwatch"
-        minSdk = 29
+        // Health Connect 가 시스템에 들어 있는 Android 14 부터 지원한다. 그 전에는 별도 앱 설치가 필요하다.
+        minSdk = 34
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -56,8 +59,11 @@ dependencies {
 
     implementation(libs.androidx.health.connect.client)
     implementation(project(":common"))
+    implementation(project(":designsystem"))
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.navigation.compose)
 
 
     testImplementation(libs.junit)

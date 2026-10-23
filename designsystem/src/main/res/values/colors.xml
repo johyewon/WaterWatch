@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 아이콘 그림의 하늘색. 런처가 아이콘을 움직일 때 가장자리에 비친다. -->
+    <color name="ic_launcher_background">#FF66B2FF</color>
+</resources>

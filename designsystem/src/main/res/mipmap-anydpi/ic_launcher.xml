@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 폰·워치 공용 런처 아이콘. 꽥 얼굴 그림(가장자리까지 꽉 찬 스토어용)을 보이는 영역(가운데 72dp)에 맞춰 사방 18dp 안쪽으로 줄여 넣는다. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground>
+        <inset
+            android:drawable="@mipmap/ic_launcher_foreground"
+            android:inset="16.667%" />
+    </foreground>
+</adaptive-icon>
